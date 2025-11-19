@@ -1,7 +1,7 @@
 use core::fmt;
 use std::{
     marker::PhantomData,
-    ops::{Add, Mul, Sub},
+    ops::{Add, Index, IndexMut, Mul, Sub},
 };
 
 pub fn mod_q(x: i64, q: i64) -> i64 {
@@ -35,6 +35,7 @@ impl PolyParams for KyberParams {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Polynomial<P: PolyParams> {
     coeffs: Vec<i64>,
     _marker: std::marker::PhantomData<P>,
@@ -158,6 +159,19 @@ impl<P: PolyParams> fmt::Display for Polynomial<P> {
     }
 }
 
+impl<P: PolyParams> Index<usize> for Polynomial<P> {
+    type Output = i64;
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.coeffs[index]
+    }
+}
+
+impl<P: PolyParams> IndexMut<usize> for Polynomial<P> {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        &mut self.coeffs[index]
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -165,6 +179,10 @@ mod tests {
     #[test]
     fn basics() {
         let mut f = Polynomial::<KyberParams>::from(0i64);
-        println!("Polynomial f: {}", f);
+        let mut g = Polynomial::<KyberParams>::from(1i64);
+        (f[255], f[2]) = (6i64, 1i64);
+        (g[19], g[3]) = (43i64, 92i64);
+        println!("Polynomial f + g: {}", &f + &g);
+        println!("Polynomial f * g: {}", &f * &g);
     }
 }
