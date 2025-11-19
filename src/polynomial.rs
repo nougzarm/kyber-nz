@@ -1,4 +1,8 @@
-use std::{marker::PhantomData, ops::Add};
+use std::{marker::PhantomData, ops::{Add, Sub}};
+
+pub fn mod_q(x: i64, q: i64) -> i64 {
+    ((x % q) + q) % q
+}
 
 pub trait PolyParams {
     const N: usize;
@@ -48,7 +52,7 @@ impl<P: PolyParams> Add for &Polynomial<P> {
             .coeffs
             .iter()
             .zip(other.coeffs.iter())
-            .map(|(a, b)| (a + b)) // à replacer par mod q
+            .map(|(a, b)| mod_q(a + b, P::Q))
             .collect();
         Polynomial::<P> {
             coeffs: new_coeffs,
@@ -56,3 +60,20 @@ impl<P: PolyParams> Add for &Polynomial<P> {
         }
     }
 }
+
+impl<P: PolyParams> Sub for &Polynomial<P> {
+    type Output = Polynomial<P>;
+    fn sub(self, other: Self) -> Polynomial<P> {
+        let new_coeffs = self
+            .coeffs
+            .iter()
+            .zip(other.coeffs.iter())
+            .map(|(a, b)| mod_q(a - b, P::Q))
+            .collect();
+        Polynomial::<P> {
+            coeffs: new_coeffs,
+            _marker: PhantomData::<P>,
+        }
+    }
+}
+
