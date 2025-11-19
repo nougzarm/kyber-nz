@@ -1,26 +1,30 @@
-use std::ops::Add;
+use std::{marker::PhantomData, ops::Add};
 
-const N: usize = 256;
-
-pub trait PolynomialRing: Add + Sized {}
-
-pub struct Polynomial {
-    coeffs: Vec<i64>
+pub trait PolyParams {
+    const N: usize;
+    const Q: i64;
+    
+    fn zetas() -> &'static [i64];
 }
 
-impl From<Vec<i64>> for Polynomial{
+pub struct Polynomial<P: PolyParams> {
+    coeffs: Vec<i64>,
+    _marker: std::marker::PhantomData<P>
+}
+
+impl<P: PolyParams> From<Vec<i64>> for Polynomial<P>{
     fn from(value: Vec<i64>) -> Self {
-        Polynomial { coeffs: value }
+        Polynomial::<P> { coeffs: value, _marker: PhantomData::<P> }
     }
 }
 
-impl Add for &Polynomial {
-    type Output = Polynomial;
-    fn add(self, other: Self) -> Polynomial {
+impl<P: PolyParams> Add for &Polynomial<P> {
+    type Output = Polynomial<P>;
+    fn add(self, other: Self) -> Polynomial<P> {
         let new_coeffs = self.coeffs.iter()
             .zip(other.coeffs.iter())
             .map(|(a, b)| (a + b)) // à replacer par mod q
             .collect();
-        Polynomial { coeffs: new_coeffs }
+        Polynomial::<P> { coeffs: new_coeffs, _marker: PhantomData::<P> }
     }
 }
