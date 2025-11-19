@@ -1,3 +1,4 @@
+use core::fmt;
 use std::{
     marker::PhantomData,
     ops::{Add, Mul, Sub},
@@ -48,6 +49,23 @@ impl<P: PolyParams> From<Vec<i64>> for Polynomial<P> {
     }
 }
 
+impl<P: PolyParams> From<i64> for Polynomial<P> {
+    fn from(value: i64) -> Self {
+        let mut coeffs = vec![0i64; P::N];
+        coeffs[0] = value;
+        Polynomial::<P>::from(coeffs)
+    }
+}
+
+impl<P: PolyParams> Polynomial<P> {
+    pub fn new(coeffs: Vec<i64>) -> Self {
+        if coeffs.len() != P::N {
+            panic!("The polynomial must have exactly {} coefficients", P::N);
+        }
+        Polynomial::<P>::from(coeffs)
+    }
+}
+
 impl<P: PolyParams> Add for &Polynomial<P> {
     type Output = Polynomial<P>;
     fn add(self, rhs: Self) -> Polynomial<P> {
@@ -94,7 +112,7 @@ impl<P: PolyParams> Mul for &Polynomial<P> {
                     new_coeffs[k] = mod_q(new_coeffs[k] + pdt, P::Q);
                 } else {
                     let k_prime = k - P::N;
-                    new_coeffs[k_prime] = mod_q(new_coeffs[k_prime] + pdt, P::Q);
+                    new_coeffs[k_prime] = mod_q(new_coeffs[k_prime] - pdt, P::Q);
                 }
             }
         }
@@ -102,5 +120,47 @@ impl<P: PolyParams> Mul for &Polynomial<P> {
             coeffs: new_coeffs,
             _marker: PhantomData::<P>,
         }
+    }
+}
+
+impl<P: PolyParams> fmt::Display for Polynomial<P> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut terms = Vec::new();
+        for i in (0..P::N).rev() {
+            let c = self.coeffs[i];
+            if c == 0 { continue; }
+
+            let mut term_str = String::new();
+            
+            if c != 1 || i == 0 {
+                term_str.push_str(&c.to_string());
+            }
+
+            if i > 0 {
+                if c != 1 { term_str.push('*'); }
+                term_str.push('X');
+                if i > 1 {
+                    term_str.push_str(&format!("^{}", i));
+                }
+            }
+            terms.push(term_str);
+        }
+
+        if terms.is_empty() {
+            write!(f, "0")
+        } else {
+            write!(f, "{}", terms.join(" + "))
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn basics() {
+        let mut f = Polynomial::<KyberParams>::from(0i64);
+        println!("Polynomial f: {}", f);
     }
 }
