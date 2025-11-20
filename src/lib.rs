@@ -1,5 +1,6 @@
 mod constants;
 mod conversion;
+mod hash;
 mod polynomial;
 
 pub fn add(left: u64, right: u64) -> u64 {

@@ -147,6 +147,29 @@ impl<P: PolyParams> IndexMut<usize> for Polynomial<P> {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PolynomialNTT<P: PolyParams> {
+    coeffs: Vec<i64>,
+    _marker: std::marker::PhantomData<P>,
+}
+
+impl<P: PolyParams> From<Vec<i64>> for PolynomialNTT<P> {
+    fn from(value: Vec<i64>) -> Self {
+        PolynomialNTT::<P> {
+            coeffs: value,
+            _marker: PhantomData::<P>,
+        }
+    }
+}
+
+impl<P: PolyParams> PolynomialNTT<P> {
+    pub fn SampleNTT(&[u8, 34]) -> Self {
+        let mut a = vec![0i64; P::N];
+
+        PolynomialNTT::<P>::from(a)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
