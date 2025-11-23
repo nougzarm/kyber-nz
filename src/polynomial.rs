@@ -5,7 +5,7 @@ use sha3::{
 };
 use std::{
     marker::PhantomData,
-    ops::{Add, Index, IndexMut, Mul, Sub},
+    ops::{Add, Index, IndexMut, Mul, RemAssign, Sub},
 };
 
 use crate::constants::PolyParams;
@@ -184,6 +184,40 @@ impl<P: PolyParams> PolynomialNTT<P> {
             }
         }
         PolynomialNTT::<P>::from(a)
+    }
+}
+
+impl<P: PolyParams> Mul for &PolynomialNTT<P> {
+    type Output = PolynomialNTT<P>;
+    fn mul(self, rhs: Self) -> Self::Output {
+        let mut new_coeffs = vec![0i64; P::N];
+
+        let zetas = P::zetas().to_vec();
+        for i in 0..128 {
+            let gamma = (zetas[i] * zetas[i] * P::ZETA).rem_euclid(P::Q);
+            new_coeffs[2 * i] = (self[2 * i] * rhs[2 * i]
+                + self[2 * i + 1] * rhs[2 * i + 1] * gamma)
+                .rem_euclid(P::Q);
+            new_coeffs[2 * i + 1] =
+                (self[2 * i] * rhs[2 * i + 1] + self[2 * i + 1] * rhs[2 * i]).rem_euclid(P::Q);
+        }
+        PolynomialNTT::<P> {
+            coeffs: new_coeffs,
+            _marker: PhantomData::<P>,
+        }
+    }
+}
+
+impl<P: PolyParams> Index<usize> for PolynomialNTT<P> {
+    type Output = i64;
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.coeffs[index]
+    }
+}
+
+impl<P: PolyParams> IndexMut<usize> for PolynomialNTT<P> {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        &mut self.coeffs[index]
     }
 }
 

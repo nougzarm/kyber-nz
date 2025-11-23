@@ -1,6 +1,7 @@
 pub trait PolyParams {
     const N: usize;
     const Q: i64;
+    const ZETA: i64;
 
     fn zetas() -> &'static [i64];
 }
@@ -9,6 +10,7 @@ pub struct KyberParams;
 impl PolyParams for KyberParams {
     const N: usize = 256;
     const Q: i64 = 3329;
+    const ZETA: i64 = 1729;
 
     fn zetas() -> &'static [i64] {
         &[
