@@ -4,7 +4,7 @@ use sha3::{Digest, Sha3_256, Sha3_512, Shake256};
 
 /// Matches the definition in (4.2) and in (4.3)
 /// PRF : {2, 3} x B^32 x B -> B^(64*eta)
-pub fn prf(eta: usize, s: &[u8], b: &[u8]) -> Vec<u8> {
+pub fn prf(eta: usize, s: &[u8; 32], b: &[u8; 1]) -> Vec<u8> {
     if eta != 2 && eta != 3 {
         panic!("Unauthorized value for eta: {}", eta);
     }
