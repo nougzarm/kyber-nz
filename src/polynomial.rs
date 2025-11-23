@@ -72,10 +72,10 @@ impl<P: PolyParams> Polynomial<P> {
 
     /// Algorithm 10 : NNT^-1(f_ntt)
     /// Computes the polynomial f in R_Q that corresponds to the given NTT representation f_ntt in T_Q
-    /// 
+    ///
     /// Input : PolynomialNTT f_ntt in T_Q (Z_Q^N)
     /// Output : Polynomial f in R_Q (Z_Q^N)
-    pub fn from_ntt(poly_ntt :&PolynomialNTT<P>) -> Self {
+    pub fn from_ntt(poly_ntt: &PolynomialNTT<P>) -> Self {
         let mut coeffs = poly_ntt.coeffs.clone();
         let zetas = P::zetas().to_vec();
         let mut i = 127;
@@ -92,14 +92,16 @@ impl<P: PolyParams> Polynomial<P> {
                 }
             }
             len = len * 2;
-        };
+        }
 
         for i in 0..(P::N) {
             coeffs[i] = (coeffs[i] * P::N_inv).rem_euclid(P::Q);
-        };
+        }
 
-        Polynomial { coeffs, _marker: PhantomData::<P> }
-
+        Polynomial {
+            coeffs,
+            _marker: PhantomData::<P>,
+        }
     }
 }
 
@@ -299,6 +301,9 @@ mod tests {
         let mut a_coeffs: Vec<i64> = vec![1, 0, 2, 3];
         a_coeffs.extend_from_slice(&[0i64; KyberParams::N]);
         let a = Polynomial::<KyberParams>::from(a_coeffs);
-        assert_eq!(Polynomial::<KyberParams>::from_ntt(&a.to_ntt()).coeffs, a.coeffs);
+        assert_eq!(
+            Polynomial::<KyberParams>::from_ntt(&a.to_ntt()).coeffs,
+            a.coeffs
+        );
     }
 }
