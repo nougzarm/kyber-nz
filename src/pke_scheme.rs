@@ -6,7 +6,7 @@ use crate::hash::{g, prf};
 use crate::polynomial::{Polynomial, PolynomialNTT};
 
 pub struct K_PKE<P: PolyParams> {
-    k: usize,
+    pub k: usize,
     eta_1: usize,
     eta_2: usize,
     d_u: usize,
