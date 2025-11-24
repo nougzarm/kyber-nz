@@ -79,11 +79,15 @@ pub fn ByteDecode<const N: usize, const Q: i64>(bytes: &[u8], d: usize) -> Vec<i
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::constants::KyberParams;
+    use crate::constants::{KyberParams, PolyParams};
     use crate::polynomial::PolynomialNTT;
 
     #[test]
     fn basics() {
+        let q = KyberParams::Q;
+        assert_eq!(decompress(compress(1933, 11, q), 11, q), 1933);
+        assert_eq!(compress(decompress(2001, 11, q), 11, q), 2001);
+
         let bytes = b"salut tous le monde. Comment allez vous";
         assert_eq!(BitsToBytes(BytesToBits(bytes)), bytes);
 
