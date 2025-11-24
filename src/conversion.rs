@@ -1,6 +1,6 @@
 use bitvec::prelude::*;
 
-pub fn compress(x: i64, d: u32, q: i64) -> i64 {
+pub fn compress(x: i64, d: usize, q: i64) -> i64 {
     let two_pow_d = 1i64 << d;
 
     let numerator = x * two_pow_d;
@@ -9,7 +9,7 @@ pub fn compress(x: i64, d: u32, q: i64) -> i64 {
     rounded % two_pow_d
 }
 
-pub fn decompress(x: i64, d: u32, q: i64) -> i64 {
+pub fn decompress(x: i64, d: usize, q: i64) -> i64 {
     let two_pow_d = 1i64 << d;
 
     let numerator = x * q;
@@ -60,15 +60,17 @@ pub fn ByteEncode(F: &[i64], d: usize) -> Vec<u8> {
 ///
 /// Input : B in B^(32*d)
 /// Output : integer array F in Z_m^N, where m = 2^d if d < 12, and m = Q if d = 12
-pub fn ByteDecode<const N: usize, const Q: i64>(bytes: &[u8], d: usize) -> Vec<i64> {
+pub fn ByteDecode(bytes: &[u8], d: usize, q: i64) -> Vec<i64> {
     let m = match d {
-        12 => Q,
+        12 => q,
         _ => 1i64 << d,
     };
 
-    let mut f = vec![0i64; N];
     let bits = BytesToBits(bytes);
-    for i in 0..N {
+    let n = bits.len() / d;
+    let mut f = vec![0i64; n];
+
+    for i in 0..n {
         for j in 0..d {
             f[i] = (f[i] + (bits[i * d + j] as i64) * (1 << j)).rem_euclid(m)
         }
@@ -110,7 +112,7 @@ mod tests {
 
         let f =
             PolynomialNTT::<KyberParams>::sample_ntt(b"Salut de la part de moi meme le ka").coeffs;
-        let f_rev = ByteDecode::<256, 3329>(&ByteEncode(&f, 12), 12);
+        let f_rev = ByteDecode(&ByteEncode(&f, 12), 12, q);
         assert_eq!(&f, &f_rev);
     }
 }
