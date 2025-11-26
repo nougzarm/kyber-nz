@@ -178,7 +178,7 @@ impl<P: PolyParams> KPke<P> {
                 .iter()
                 .map(|&c| compress(c, self.d_u, P::Q))
                 .collect();
-            c1.extend(byte_encode(&compressed, self.d_u as usize));
+            c1.extend(byte_encode(&compressed, self.d_u));
         }
 
         let compressed_v: Vec<i64> = v
@@ -186,7 +186,7 @@ impl<P: PolyParams> KPke<P> {
             .iter()
             .map(|&c| compress(c, self.d_v, P::Q))
             .collect();
-        let c2 = byte_encode(&compressed_v, self.d_v as usize);
+        let c2 = byte_encode(&compressed_v, self.d_v);
 
         c1.extend_from_slice(&c2);
         c1
