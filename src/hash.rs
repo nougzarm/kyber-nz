@@ -19,7 +19,7 @@ pub fn prf(eta: usize, s: &[u8; 32], b: &[u8; 1]) -> Vec<u8> {
     output
 }
 
-/// Matches the definition in (4.4)
+/// Matches the definition in (4.4 FIPS 203)
 /// H : B* -> B^32
 pub fn h(s: &[u8]) -> [u8; 32] {
     let mut hasher = Sha3_256::new();
@@ -28,7 +28,7 @@ pub fn h(s: &[u8]) -> [u8; 32] {
     hasher.finalize().into()
 }
 
-/// Matches the definition in (4.4)
+/// Matches the definition in (4.4 FIPS 203)
 /// J : B* -> B^32
 pub fn j(s: &[u8]) -> [u8; 32] {
     let mut hasher = Shake256::default();
@@ -41,7 +41,7 @@ pub fn j(s: &[u8]) -> [u8; 32] {
     output
 }
 
-/// Matches the definition in (4.5)
+/// Matches the definition in (4.5 FIPS 203)
 /// G : B* -> B^32 x B^32
 pub fn g(c: &[u8]) -> ([u8; 32], [u8; 32]) {
     let mut hasher = Sha3_512::new();

@@ -16,7 +16,7 @@ pub fn decompress(x: i64, d: usize, q: i64) -> i64 {
     (numerator + half_divisor) >> d
 }
 
-/// Algorithm 3 : BitsToBytes(b)
+/// Algorithm 3 (FIPS 203) : BitsToBytes(b)
 /// Converts a bit array (of a length that is a multiple of eight) into an array of bytes.
 ///
 /// Input : b in {0, 1}^(8*r)
@@ -25,7 +25,7 @@ pub fn bits_to_bytes(bits: BitVec<u8, Lsb0>) -> Vec<u8> {
     bits.into_vec()
 }
 
-/// Algorithm 4 : BytesToBits(B)
+/// Algorithm 4 (FIPS 203) : BytesToBits(B)
 /// Performs the inverse of BitsToBytes, converting a byte array into a bit array
 ///
 /// Input : B in B^r
@@ -34,7 +34,7 @@ pub fn bytes_to_bits(bytes: &[u8]) -> BitVec<u8, Lsb0> {
     BitVec::<u8, Lsb0>::from_vec(bytes.to_vec())
 }
 
-/// Algorithm 5 : ByteEncode_d(F)
+/// Algorithm 5 (FIPS 203) : ByteEncode_d(F)
 /// Encodes an array of d-bit integers into a byte array for 1 <= d <= 12
 ///
 /// Input : integer array F in Z_m^N, where m = 2^d if d < 12, and m = Q if d = 12
@@ -50,7 +50,7 @@ pub fn byte_encode(f: &[i64], d: usize) -> Vec<u8> {
     bits_to_bytes(bits)
 }
 
-/// Algorithm 6 : ByteEncode_d(F)
+/// Algorithm 6 (FIPS 203) : ByteEncode_d(F)
 /// Decodes a byte array into an array of d-bit integers for 1 <= d <= 12
 ///
 /// Input : B in B^(32*d)

@@ -24,7 +24,7 @@ impl<P: PolyParams> KPke<P> {
         }
     }
 
-    /// Algorithm 13 : K-PKE.KeyGen(d)
+    /// Algorithm 13 (FIPS 203) : K-PKE.KeyGen(d)
     ///
     /// Input : randomness d in B^32
     /// Output : (ek, dk) pair of encryption-decryption keys
@@ -99,7 +99,7 @@ impl<P: PolyParams> KPke<P> {
         (ek, dk)
     }
 
-    /// Algorithm 14 : K-PKE.Encrypt(ek, m, r)
+    /// Algorithm 14 (FIPS 203) : K-PKE.Encrypt(ek, m, r)
     ///
     /// Input : encryption key ek in B^(384*k + 32)
     /// Input : message m in B^32
@@ -190,7 +190,7 @@ impl<P: PolyParams> KPke<P> {
         c1
     }
 
-    /// Algorithm 15 : K-PKE.Decrypt(dk, c)
+    /// Algorithm 15 (FIPS 203) : K-PKE.Decrypt(dk, c)
     ///
     /// Input : decryption key dk in B^(384*k)
     /// Input : ciphertext c in B^(32 * (d_u*k + d_v))

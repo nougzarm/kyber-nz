@@ -11,7 +11,7 @@ impl<P: PolyParams> MlKem<P> {
         MlKem(KPke::<P>::new(k, eta_1, eta_2, d_u, d_v))
     }
 
-    /// Algorithm 16 : ML-KEM.KeyGen_internal(d, z)
+    /// Algorithm 16 (FIPS 203) : ML-KEM.KeyGen_internal(d, z)
     /// Uses randomness to generate an encapsulation key and a corresponding decapsulation key.
     ///
     /// Input : randomness d in B^32
@@ -27,7 +27,7 @@ impl<P: PolyParams> MlKem<P> {
         (ek_pke, dk)
     }
 
-    /// Algorithm 17 : ML-KEM.Encaps_internal(ek, m)
+    /// Algorithm 17 (FIPS 203) : ML-KEM.Encaps_internal(ek, m)
     /// Uses the encapsulation key and randomness to generate a key and an associated ciphertext.
     ///
     /// Input : encapsulation key ek in B^(384*k + 32)
@@ -43,7 +43,7 @@ impl<P: PolyParams> MlKem<P> {
         (k.to_vec(), c)
     }
 
-    /// Algorithm 18 : ML-KEM.Decaps_internal(dk, c)
+    /// Algorithm 18 (FIPS 203) : ML-KEM.Decaps_internal(dk, c)
     /// Uses the decapsulation key to produce a shared secret key from a ciphertext.
     ///
     /// Input : decapsulation key dk in B^(768*k + 96)
@@ -76,7 +76,7 @@ impl<P: PolyParams> MlKem<P> {
         k_prime.to_vec()
     }
 
-    /// Algorithm 19 : ML-KEM.KeyGen()
+    /// Algorithm 19 (FIPS 203) : ML-KEM.KeyGen()
     /// Generates an encapsulation key and a corresponding decapsulation key.
     ///
     /// Output : encapsulation key ek in B^(384*k + 32)
@@ -91,7 +91,7 @@ impl<P: PolyParams> MlKem<P> {
         self.key_gen_internal(&d, &z)
     }
 
-    /// Algorithm 20 : ML-KEM.Encaps(ek)
+    /// Algorithm 20 (FIPS 203) : ML-KEM.Encaps(ek)
     /// Uses the encapsulation key to generate a shared secret key and an associated ciphertext
     ///
     /// Input : encapsulation key ek in B^(384*k + 32)
@@ -104,7 +104,7 @@ impl<P: PolyParams> MlKem<P> {
         self.encaps_internal(ek, &m)
     }
 
-    /// Algorithm 21 : ML-KEM.Decaps(dk, c)
+    /// Algorithm 21 (FIPS 203) : ML-KEM.Decaps(dk, c)
     /// Uses the decapsulation key to produce a shared secret key from a ciphertext.
     ///
     /// Input : decapsulation key dk in B^(768*k + 96)

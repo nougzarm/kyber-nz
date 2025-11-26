@@ -41,7 +41,7 @@ impl<P: PolyParams> Polynomial<P> {
         Polynomial::<P>::from(coeffs)
     }
 
-    /// Algorithm 8 : SimplePolyCBD_eta(B)
+    /// Algorithm 8 (FIPS 203) : SimplePolyCBD_eta(B)
     ///
     /// Input : B in B^(64*eta)
     /// avec eta dans {2, 3}
@@ -71,7 +71,7 @@ impl<P: PolyParams> Polynomial<P> {
         Polynomial::<P>::from(coeffs)
     }
 
-    /// Algorithm 9 : NTT(f)
+    /// Algorithm 9 (FIPS 203) : NTT(f)
     /// Computes the NTT representation f_ntt of the giver polynomial f in R_Q
     ///
     /// Input : Polynomial f in R_Q (Z_Q^N)
@@ -100,7 +100,7 @@ impl<P: PolyParams> Polynomial<P> {
         }
     }
 
-    /// Algorithm 10 : NNT^-1(f_ntt)
+    /// Algorithm 10 (FIPS 203) : NNT^-1(f_ntt)
     /// Computes the polynomial f in R_Q that corresponds to the given NTT representation f_ntt in T_Q
     ///
     /// Input : PolynomialNTT f_ntt in T_Q (Z_Q^N)
