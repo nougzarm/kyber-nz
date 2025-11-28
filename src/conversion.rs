@@ -1,5 +1,3 @@
-use bitvec::prelude::*;
-
 pub fn compress(x: i64, d: usize, q: i64) -> i64 {
     let two_pow_d = 1i64 << d;
 
@@ -21,8 +19,18 @@ pub fn decompress(x: i64, d: usize, q: i64) -> i64 {
 ///
 /// Input : b in {0, 1}^(8*r)
 /// Output : B in B^r
-pub fn bits_to_bytes(bits: BitVec<u8, Lsb0>) -> Vec<u8> {
-    bits.into_vec()
+pub fn bits_to_bytes(bits: &[u8]) -> Vec<u8> {
+    if bits.len() % 8 != 0 {
+        panic!("")
+    }
+
+    let mut bytes = vec![0u8; (bits.len() + 7) / 8];
+    for (i, &bit) in bits.iter().enumerate() {
+        if bit == 1 {
+            bytes[i / 8] |= 1 << (i % 8);
+        }
+    }
+    bytes
 }
 
 /// Algorithm 4 (FIPS 203) : BytesToBits(B)
@@ -30,8 +38,15 @@ pub fn bits_to_bytes(bits: BitVec<u8, Lsb0>) -> Vec<u8> {
 ///
 /// Input : B in B^r
 /// Output : b in {0, 1}^(8*r)
-pub fn bytes_to_bits(bytes: &[u8]) -> BitVec<u8, Lsb0> {
-    BitVec::<u8, Lsb0>::from_vec(bytes.to_vec())
+pub fn bytes_to_bits(bytes: &[u8]) -> Vec<u8> {
+    let mut bits = Vec::with_capacity(bytes.len() * 8);
+
+    for byte in bytes {
+        for i in 0..8 {
+            bits.push((byte >> i) & 1);
+        }
+    }
+    bits
 }
 
 /// Algorithm 5 (FIPS 203) : ByteEncode_d(F)
@@ -40,14 +55,13 @@ pub fn bytes_to_bits(bytes: &[u8]) -> BitVec<u8, Lsb0> {
 /// Input : integer array F in Z_m^N, where m = 2^d if d < 12, and m = Q if d = 12
 /// Output : B in B^(32*d)
 pub fn byte_encode(f: &[i64], d: usize) -> Vec<u8> {
-    let mut bits = bitvec![u8, Lsb0; 0; f.len() * d];
+    let mut bits = vec![0u8; f.len() * d];
     for (i, coeff) in f.iter().enumerate() {
         for j in 0..d {
-            let bit_is_set = ((coeff >> j) & 1) == 1;
-            bits.set(i * d + j, bit_is_set);
+            bits[i * d + j] = ((coeff >> j) & 1) as u8;
         }
     }
-    bits_to_bytes(bits)
+    bits_to_bytes(&bits)
 }
 
 /// Algorithm 6 (FIPS 203) : ByteEncode_d(F)
@@ -88,9 +102,9 @@ mod tests {
         assert_eq!(compress(decompress(2001, 11, q), 11, q), 2001);
 
         let bytes = b"salut tous le monde. Comment allez vous";
-        assert_eq!(bits_to_bytes(bytes_to_bits(bytes)), bytes);
+        assert_eq!(bits_to_bytes(&bytes_to_bits(bytes)), bytes);
 
-        let b = bitvec![u8, Lsb0;
+        let b = vec![
             1, 1, 0, 0, 1, 1, 1, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1,
             1, 1, 0, 0, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 1,
             1, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0,
@@ -101,9 +115,9 @@ mod tests {
             0, 0, 1, 1, 0, 0, 1, 1, 1, 0, 1, 1, 0, 0, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0,
             1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 0, 0,
             1, 1, 0, 0, 1, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1,
-            1, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 0, 0, 1, 1, 1, 0
+            1, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 0, 0, 1, 1, 1, 0,
         ];
-        assert_eq!(bytes_to_bits(&bits_to_bytes(b.clone())), b);
+        assert_eq!(bytes_to_bits(&bits_to_bytes(&b)), b);
 
         let f =
             PolynomialNTT::<KyberParams>::sample_ntt(b"Salut de la part de moi meme le ka").coeffs;
