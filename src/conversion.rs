@@ -20,7 +20,7 @@ pub fn decompress(x: i64, d: usize, q: i64) -> i64 {
 /// Input : b in {0, 1}^(8*r)
 /// Output : B in B^r
 pub fn bits_to_bytes(bits: &[u8]) -> Vec<u8> {
-    if bits.len() % 8 != 0 {
+    if !bits.len().is_multiple_of(8) {
         panic!("")
     }
 
