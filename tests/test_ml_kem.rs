@@ -1,6 +1,6 @@
 use hex;
 use pqc_rs::constants::KyberParams;
-use pqc_rs::kem_scheme::MlKem;
+use pqc_rs::kyber::kem_scheme::MlKem;
 
 fn run_kem_test(k: usize, eta_1: usize, eta_2: usize, du: usize, dv: usize, test_name: &str) {
     println!("\n--- Running the test : {} ---", test_name);
