@@ -5,7 +5,7 @@ use sha3::{
 };
 use std::{
     marker::PhantomData,
-    ops::{Add, Index, IndexMut, Mul, Sub},
+    ops::{Add, AddAssign, Index, IndexMut, Mul, Sub},
 };
 
 use crate::{constants::PolyParams, conversion::bytes_to_bits};
@@ -147,6 +147,14 @@ impl<P: PolyParams> Add for &Polynomial<P> {
         Polynomial::<P> {
             coeffs: new_coeffs,
             _marker: PhantomData::<P>,
+        }
+    }
+}
+
+impl<P: PolyParams> AddAssign<&Polynomial<P>> for Polynomial<P> {
+    fn add_assign(&mut self, rhs: &Polynomial<P>) {
+        for (a, b) in self.coeffs.iter_mut().zip(rhs.coeffs.iter()) {
+            *a = (*a + b).rem_euclid(P::Q);
         }
     }
 }
@@ -296,6 +304,14 @@ impl<P: PolyParams> Add for &PolynomialNTT<P> {
         PolynomialNTT::<P> {
             coeffs: new_coeffs,
             _marker: PhantomData::<P>,
+        }
+    }
+}
+
+impl<P: PolyParams> AddAssign<&PolynomialNTT<P>> for PolynomialNTT<P> {
+    fn add_assign(&mut self, rhs: &PolynomialNTT<P>) {
+        for (a, b) in self.coeffs.iter_mut().zip(rhs.coeffs.iter()) {
+            *a = (*a + b).rem_euclid(P::Q);
         }
     }
 }

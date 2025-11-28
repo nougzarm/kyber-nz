@@ -76,7 +76,7 @@ impl<P: PolyParams> KPke<P> {
 
             for (j, poly) in s_ntt.iter().enumerate() {
                 let product = &a_ntt[i][j] * poly;
-                pol_temp = &pol_temp + &product;
+                pol_temp += &product;
             }
 
             let t_i = &pol_temp + &e_ntt[i];
@@ -154,7 +154,7 @@ impl<P: PolyParams> KPke<P> {
             let mut pol_tmp = PolynomialNTT::<P>::from(vec![0i64; P::N]);
             for j in 0..self.k {
                 let product = &a_ntt[j][i] * &y_ntt[j];
-                pol_tmp = &pol_tmp + &product;
+                pol_tmp += &product;
             }
             u.push(&Polynomial::<P>::from_ntt(&pol_tmp) + poly);
         }
@@ -165,7 +165,7 @@ impl<P: PolyParams> KPke<P> {
 
         let mut v_ntt_tmp = PolynomialNTT::<P>::from(vec![0i64; P::N]);
         for i in 0..self.k {
-            v_ntt_tmp = &v_ntt_tmp + &(&t_ntt[i] * &y_ntt[i]);
+            v_ntt_tmp += &(&t_ntt[i] * &y_ntt[i]);
         }
         let v = &(&Polynomial::<P>::from_ntt(&v_ntt_tmp) + &e_2) + &mu;
 
@@ -229,7 +229,7 @@ impl<P: PolyParams> KPke<P> {
 
         let mut pdt_tmp = PolynomialNTT::<P>::from(vec![0i64; P::N]);
         for i in 0..self.k {
-            pdt_tmp = &pdt_tmp + &(&s_ntt[i] * &u_prime[i].to_ntt());
+            pdt_tmp += &(&s_ntt[i] * &u_prime[i].to_ntt());
         }
         let w = &v_prime - &Polynomial::<P>::from_ntt(&pdt_tmp);
 
