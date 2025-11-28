@@ -367,10 +367,7 @@ mod tests {
         let mut a_coeffs: Vec<i64> = vec![1, 0, 2, 3, 18, 32, 72, 21, 23, 1, 0, 9, 287, 23];
         a_coeffs.extend_from_slice(&[0i64; KyberParams::N - 14]);
         let a = KyberPoly::from(a_coeffs);
-        assert_eq!(
-            KyberPoly::from_ntt(&a.to_ntt()).coeffs,
-            a.coeffs
-        );
+        assert_eq!(KyberPoly::from_ntt(&a.to_ntt()).coeffs, a.coeffs);
 
         let mut p1_coeffs: Vec<i64> = vec![1, 2, 4, 4, 3, 1, 6, 6, 4, 3];
         p1_coeffs.extend_from_slice(&[0i64; KyberParams::N - 10]);
