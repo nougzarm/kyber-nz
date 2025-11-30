@@ -70,7 +70,7 @@ impl<P: PolyParams> KPke<P> {
 
         let mut t_ntt: Vec<PolynomialNTT<P>> = Vec::with_capacity(self.k);
         for i in 0..self.k {
-            let mut pol_temp = PolynomialNTT::<P>::from(vec![0i64; P::N]);
+            let mut pol_temp = PolynomialNTT::<P>::from([0i32; 256]);
 
             for (j, poly) in s_ntt.iter().enumerate() {
                 let product = &a_ntt[i * self.k + j] * poly;
@@ -109,7 +109,7 @@ impl<P: PolyParams> KPke<P> {
         for i in 0..self.k {
             let chunk = &ek[384 * i..384 * (i + 1)];
             let coeffs = byte_decode(chunk, 12, P::Q);
-            t_ntt.push(PolynomialNTT::<P>::from(coeffs));
+            t_ntt.push(PolynomialNTT::<P>::from_slice(coeffs.as_slice()));
         }
         let rho = &ek[384 * self.k..];
 
@@ -147,7 +147,7 @@ impl<P: PolyParams> KPke<P> {
 
         let mut u = Vec::with_capacity(self.k);
         for (i, poly) in e_1.iter().enumerate() {
-            let mut pol_tmp = PolynomialNTT::<P>::from(vec![0i64; P::N]);
+            let mut pol_tmp = PolynomialNTT::<P>::from([0i32; 256]);
             for j in 0..self.k {
                 let product = &a_ntt[j * self.k + i] * &y_ntt[j];
                 pol_tmp += &product;
@@ -156,10 +156,10 @@ impl<P: PolyParams> KPke<P> {
         }
 
         let m_bits = byte_decode(m, 1, P::Q);
-        let mu_coeffs: Vec<i64> = m_bits.into_iter().map(|b| decompress(b, 1, P::Q)).collect();
-        let mu = Polynomial::<P>::from(mu_coeffs);
+        let mu_coeffs: Vec<i32> = m_bits.into_iter().map(|b| decompress(b, 1, P::Q)).collect();
+        let mu = Polynomial::<P>::from_slice(&mu_coeffs);
 
-        let mut v_ntt_tmp = PolynomialNTT::<P>::from(vec![0i64; P::N]);
+        let mut v_ntt_tmp = PolynomialNTT::<P>::from([0i32; 256]);
         for i in 0..self.k {
             v_ntt_tmp += &(&t_ntt[i] * &y_ntt[i]);
         }
@@ -167,20 +167,20 @@ impl<P: PolyParams> KPke<P> {
 
         let mut c1 = Vec::new();
         for poly in &u {
-            let compressed: Vec<i64> = poly
+            let compressed: Vec<i32> = poly
                 .coeffs
                 .iter()
                 .map(|&c| compress(c, self.d_u, P::Q))
                 .collect();
-            c1.extend(byte_encode(&compressed, self.d_u));
+            c1.extend(byte_encode(compressed.as_slice(), self.d_u));
         }
 
-        let compressed_v: Vec<i64> = v
+        let compressed_v: Vec<i32> = v
             .coeffs
             .iter()
             .map(|&c| compress(c, self.d_v, P::Q))
             .collect();
-        let c2 = byte_encode(&compressed_v, self.d_v);
+        let c2 = byte_encode(compressed_v.as_slice(), self.d_v);
 
         c1.extend_from_slice(&c2);
         c1
@@ -202,40 +202,40 @@ impl<P: PolyParams> KPke<P> {
                 self.d_u,
                 P::Q,
             );
-            let coeffs: Vec<i64> = decode
+            let coeffs: Vec<i32> = decode
                 .into_iter()
                 .map(|val| decompress(val, self.d_u, P::Q))
                 .collect();
-            u_prime.push(Polynomial::<P>::from(coeffs));
+            u_prime.push(Polynomial::<P>::from_slice(coeffs.as_slice()));
         }
 
         let decoded_v = byte_decode(c_2, self.d_v, P::Q);
-        let v_coeffs: Vec<i64> = decoded_v
+        let v_coeffs: Vec<i32> = decoded_v
             .into_iter()
             .map(|val| decompress(val, self.d_v, P::Q))
             .collect();
-        let v_prime = Polynomial::<P>::from(v_coeffs);
+        let v_prime = Polynomial::<P>::from_slice(v_coeffs.as_slice());
 
         let mut s_ntt = Vec::with_capacity(self.k);
         for i in 0..self.k {
             let chunk = &dk[384 * i..384 * (i + 1)];
             let coeffs = byte_decode(chunk, 12, P::Q);
-            s_ntt.push(PolynomialNTT::<P>::from(coeffs));
+            s_ntt.push(PolynomialNTT::<P>::from_slice(coeffs.as_slice()));
         }
 
-        let mut pdt_tmp = PolynomialNTT::<P>::from(vec![0i64; P::N]);
+        let mut pdt_tmp = PolynomialNTT::<P>::from([0i32; 256]);
         for i in 0..self.k {
             pdt_tmp += &(&s_ntt[i] * &u_prime[i].to_ntt());
         }
         let w = &v_prime - &Polynomial::<P>::from_ntt(&pdt_tmp);
 
-        let compressed_w: Vec<i64> = w
+        let compressed_w: Vec<i32> = w
             .coeffs
             .iter()
             .map(|&coeff| compress(coeff, 1, P::Q))
             .collect();
 
-        byte_encode(&compressed_w, 1)
+        byte_encode(compressed_w.as_slice(), 1)
     }
 }
 

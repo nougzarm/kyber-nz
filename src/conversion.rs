@@ -1,5 +1,5 @@
-pub fn compress(x: i64, d: usize, q: i64) -> i64 {
-    let two_pow_d = 1i64 << d;
+pub fn compress(x: i32, d: usize, q: i32) -> i32 {
+    let two_pow_d = 1i32 << d;
 
     let numerator = x * two_pow_d;
     let rounded = (numerator + (q / 2)) / q;
@@ -7,10 +7,10 @@ pub fn compress(x: i64, d: usize, q: i64) -> i64 {
     rounded % two_pow_d
 }
 
-pub fn decompress(x: i64, d: usize, q: i64) -> i64 {
+pub fn decompress(x: i32, d: usize, q: i32) -> i32 {
     let numerator = x * q;
 
-    let half_divisor = 1i64 << (d - 1);
+    let half_divisor = 1i32 << (d - 1);
     (numerator + half_divisor) >> d
 }
 
@@ -54,7 +54,7 @@ pub fn bytes_to_bits(bytes: &[u8]) -> Vec<u8> {
 ///
 /// Input : integer array F in Z_m^N, where m = 2^d if d < 12, and m = Q if d = 12
 /// Output : B in B^(32*d)
-pub fn byte_encode(f: &[i64], d: usize) -> Vec<u8> {
+pub fn byte_encode(f: &[i32], d: usize) -> Vec<u8> {
     let mut bits = vec![0u8; f.len() * d];
     for (i, coeff) in f.iter().enumerate() {
         for j in 0..d {
@@ -69,19 +69,19 @@ pub fn byte_encode(f: &[i64], d: usize) -> Vec<u8> {
 ///
 /// Input : B in B^(32*d)
 /// Output : integer array F in Z_m^N, where m = 2^d if d < 12, and m = Q if d = 12
-pub fn byte_decode(bytes: &[u8], d: usize, q: i64) -> Vec<i64> {
+pub fn byte_decode(bytes: &[u8], d: usize, q: i32) -> Vec<i32> {
     let m = match d {
         12 => q,
-        _ => 1i64 << d,
+        _ => 1i32 << d,
     };
 
     let bits = bytes_to_bits(bytes);
     let n = bits.len() / d;
-    let mut f = vec![0i64; n];
+    let mut f = vec![0i32; n];
 
     for i in 0..n {
         for j in 0..d {
-            f[i] = (f[i] + (bits[i * d + j] as i64) * (1 << j)).rem_euclid(m)
+            f[i] = (f[i] + (bits[i * d + j] as i32) * (1 << j)).rem_euclid(m)
         }
     }
     f
@@ -122,6 +122,6 @@ mod tests {
         let f =
             PolynomialNTT::<KyberParams>::sample_ntt(b"Salut de la part de moi meme le ka").coeffs;
         let f_rev = byte_decode(&byte_encode(&f, 12), 12, q);
-        assert_eq!(&f, &f_rev);
+        assert_eq!(&f, &f_rev.as_slice());
     }
 }

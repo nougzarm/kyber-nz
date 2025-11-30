@@ -1,20 +1,20 @@
 pub trait PolyParams {
     const N: usize;
-    const N_INV: i64;
-    const Q: i64;
-    const ZETA: i64;
+    const N_INV: i32;
+    const Q: i32;
+    const ZETA: i32;
 
-    fn zetas() -> &'static [i64];
+    fn zetas() -> &'static [i32];
 }
 
 pub struct KyberParams;
 impl PolyParams for KyberParams {
     const N: usize = 256;
-    const N_INV: i64 = 3303;
-    const Q: i64 = 3329;
-    const ZETA: i64 = 17;
+    const N_INV: i32 = 3303;
+    const Q: i32 = 3329;
+    const ZETA: i32 = 17;
 
-    fn zetas() -> &'static [i64] {
+    fn zetas() -> &'static [i32] {
         &[
             1, 1729, 2580, 3289, 2642, 630, 1897, 848, 1062, 1919, 193, 797, 2786, 3260, 569, 1746,
             296, 2447, 1339, 1476, 3046, 56, 2240, 1333, 1426, 2094, 535, 2882, 2393, 2879, 1974,
