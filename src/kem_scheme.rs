@@ -19,7 +19,19 @@ impl<const K: usize, P: PolyParams> MlKem<K, P> {
 
 pub struct KemDecapsKey<const K: usize>(pub [[u8; 384]; K], pub [[u8; 384]; K], pub [u8; 96]);
 
+impl<const K: usize> KemDecapsKey<K> {
+    pub fn len() -> usize {
+        768 * K + 96
+    }
+}
+
 pub struct KemEncapsKey<const K: usize>(pub [[u8; 384]; K], pub [u8; 32]);
+
+impl<const K: usize> KemEncapsKey<K> {
+    pub fn len() -> usize {
+        384 * K + 32
+    }
+}
 
 impl<const K: usize, P: PolyParams> KemScheme for MlKem<K, P> {
     type DecapsKey = KemDecapsKey<K>;
