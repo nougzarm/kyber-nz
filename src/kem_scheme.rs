@@ -126,8 +126,7 @@ impl<const K: usize, P: PolyParams> KemScheme for MlKem<K, P> {
         j_hash.extend_from_slice(c);
         let k_bar = j(&j_hash);
 
-        let m_prime_slice: [u8; 32] = m_prime.as_slice().try_into().expect("");
-        let c_prime = self.0.encrypt(&ek_pke, &m_prime_slice, &r_prime);
+        let c_prime = self.0.encrypt(&ek_pke, &m_prime, &r_prime);
 
         let cond = !(c.ct_eq(&c_prime));
 

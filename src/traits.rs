@@ -7,7 +7,7 @@ pub trait PkeScheme {
 
     fn encrypt(&self, ek: &Self::EncryptKey, m: &[u8; 32], r: &[u8; 32]) -> Vec<u8>;
 
-    fn decrypt(&self, dk: &Self::DecryptKey, c: &[u8]) -> Vec<u8>;
+    fn decrypt(&self, dk: &Self::DecryptKey, c: &[u8]) -> [u8; 32];
 }
 
 pub trait KemScheme {

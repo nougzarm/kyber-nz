@@ -223,7 +223,7 @@ impl<const K: usize, P: PolyParams> PkeScheme for KPke<K, P> {
     /// Input : decryption key dk in B^(384*k)
     /// Input : ciphertext c in B^(32 * (d_u*k + d_v))
     /// Output : message m in B^32
-    fn decrypt(&self, dk: &Self::DecryptKey, c: &[u8]) -> Vec<u8> {
+    fn decrypt(&self, dk: &Self::DecryptKey, c: &[u8]) -> [u8; 32] {
         let c_1 = &c[0..32 * self.d_u * K];
         let c_2 = &c[32 * self.d_u * K..];
 
@@ -267,7 +267,9 @@ impl<const K: usize, P: PolyParams> PkeScheme for KPke<K, P> {
             .map(|&coeff| compress(coeff, 1, P::Q))
             .collect();
 
-        byte_encode(compressed_w.as_slice(), 1).unwrap()
+        let mut result = [0u8; 32];
+        result.copy_from_slice(&byte_encode(compressed_w.as_slice(), 1).unwrap());
+        result
     }
 }
 
@@ -290,6 +292,6 @@ mod tests {
                 .unwrap());
 
         let mess_decrypt = pke_scheme.decrypt(&dk, &ciphertext);
-        assert_eq!(mess_decrypt, message);
+        assert_eq!(mess_decrypt, *message);
     }
 }
