@@ -1,16 +1,29 @@
 use rand::RngCore;
 use rand::rngs::OsRng;
+use sha3::digest::Update;
+use sha3::{Digest, Sha3_256, Sha3_512};
 use subtle::{ConditionallySelectable, ConstantTimeEq};
 
-use crate::hash::{g, h, j};
-use crate::{constants::PolyParams, pke_scheme::KPke};
+use crate::hash::{g, j};
+use crate::pke_scheme::{PkeDecryptKey, PkeEncryptKey};
+use crate::traits::KemScheme;
+use crate::{constants::PolyParams, pke_scheme::KPke, traits::PkeScheme};
 
-pub struct MlKem<P: PolyParams>(pub KPke<P>);
+pub struct MlKem<const K: usize, P: PolyParams>(pub KPke<K, P>);
 
-impl<P: PolyParams> MlKem<P> {
-    pub fn new(k: usize, eta_1: usize, eta_2: usize, d_u: usize, d_v: usize) -> Self {
-        MlKem(KPke::<P>::new(k, eta_1, eta_2, d_u, d_v))
+impl<const K: usize, P: PolyParams> MlKem<K, P> {
+    pub fn new(eta_1: usize, eta_2: usize, d_u: usize, d_v: usize) -> Self {
+        MlKem(KPke::<K, P>::new(eta_1, eta_2, d_u, d_v))
     }
+}
+
+pub struct KemDecapsKey<const K: usize>(pub [[u8; 384]; K], pub [[u8; 384]; K], pub [u8; 96]);
+
+pub struct KemEncapsKey<const K: usize>(pub [[u8; 384]; K], pub [u8; 32]);
+
+impl<const K: usize, P: PolyParams> KemScheme for MlKem<K, P> {
+    type DecapsKey = KemDecapsKey<K>;
+    type EncapsKey = KemEncapsKey<K>;
 
     /// Algorithm 16 (FIPS 203) : ML-KEM.KeyGen_internal(d, z)
     /// Uses randomness to generate an encapsulation key and a corresponding decapsulation key.
@@ -19,13 +32,26 @@ impl<P: PolyParams> MlKem<P> {
     /// Input : randomness z in B^32
     /// Output : encapsulation key ek in B^(384*k + 32)
     /// Output : decapsulation key dk in B^(768*k + 96)
-    pub fn key_gen_internal(&self, d: &[u8; 32], z: &[u8; 32]) -> (Vec<u8>, Vec<u8>) {
-        let (ek_pke, mut dk) = self.0.key_gen(d);
-        dk.extend_from_slice(&ek_pke);
-        dk.extend_from_slice(&h(&ek_pke));
-        dk.extend_from_slice(z);
+    fn key_gen_internal(&self, d: &[u8; 32], z: &[u8; 32]) -> (Self::EncapsKey, Self::DecapsKey) {
+        let (pke_encrypt_key, pke_decrypt_key) = self.0.key_gen(d);
+        let mut decaps_2_content = [0u8; 96];
+        decaps_2_content[..32].copy_from_slice(&pke_encrypt_key.1);
 
-        (ek_pke, dk)
+        // h function from hash.rs
+        let mut hasher = Sha3_256::new();
+        for slice in &pke_encrypt_key.0 {
+            Update::update(&mut hasher, slice);
+        }
+        Update::update(&mut hasher, &pke_encrypt_key.1);
+        let h_res: [u8; 32] = hasher.finalize().into();
+
+        decaps_2_content[32..64].copy_from_slice(&h_res);
+        decaps_2_content[64..].copy_from_slice(z);
+
+        let decaps_key = KemDecapsKey::<K>(pke_decrypt_key.0, pke_encrypt_key.0, decaps_2_content);
+        let encaps_key = KemEncapsKey::<K>(pke_encrypt_key.0, pke_encrypt_key.1);
+
+        (encaps_key, decaps_key)
     }
 
     /// Algorithm 17 (FIPS 203) : ML-KEM.Encaps_internal(ek, m)
@@ -35,11 +61,29 @@ impl<P: PolyParams> MlKem<P> {
     /// Input : randomness m in B^32
     /// Output : shared secret key K in B^32
     /// Output : ciphertext c in B^(32 * (d_u*k + d_v))
-    pub fn encaps_internal(&self, ek: &[u8], m: &[u8; 32]) -> (Vec<u8>, Vec<u8>) {
-        let mut g_seed = m.to_vec();
-        g_seed.extend_from_slice(&h(ek));
-        let (k, r) = g(&g_seed);
-        let c = self.0.encrypt(ek, m, &r);
+    fn encaps_internal(&self, ek: &Self::EncapsKey, m: &[u8; 32]) -> (Vec<u8>, Vec<u8>) {
+        // g function from hash.rs
+        let mut g_hasher = Sha3_512::new();
+        Update::update(&mut g_hasher, m);
+
+        // h function from hash.rs
+        let mut h_hasher = Sha3_256::new();
+        for slice in &ek.0 {
+            Update::update(&mut h_hasher, slice);
+        }
+        Update::update(&mut h_hasher, &ek.1);
+        let h_res: [u8; 32] = h_hasher.finalize().into();
+
+        Update::update(&mut g_hasher, &h_res);
+
+        let result = g_hasher.finalize();
+
+        let mut k = [0u8; 32];
+        let mut r = [0u8; 32];
+        k.copy_from_slice(&result[0..32]);
+        r.copy_from_slice(&result[32..64]);
+
+        let c = self.0.encrypt(&PkeEncryptKey::<K>(ek.0, ek.1), m, &r);
 
         (k.to_vec(), c)
     }
@@ -50,25 +94,27 @@ impl<P: PolyParams> MlKem<P> {
     /// Input : decapsulation key dk in B^(768*k + 96)
     /// Input : ciphertext c in B^(32 * (d_u*k + d_v))
     /// Output : shared secret key K in B^32
-    pub fn decaps_internal(&self, dk: &[u8], c: &[u8]) -> Vec<u8> {
-        let dk_pke = &dk[0..384 * self.0.k];
-        let ek_pke = &dk[384 * self.0.k..768 * self.0.k + 32];
-        let h = &dk[768 * self.0.k + 32..768 * self.0.k + 64];
-        let z = &dk[768 * self.0.k + 64..];
-        let m_prime = self.0.decrypt(dk_pke, c);
+    fn decaps_internal(&self, dk: &Self::DecapsKey, c: &[u8]) -> Vec<u8> {
+        let dk_pke = PkeDecryptKey(dk.0);
+
+        let mut ek_pke_1 = [0u8; 32];
+        ek_pke_1.copy_from_slice(&dk.2[..32]);
+        let ek_pke = PkeEncryptKey(dk.1, ek_pke_1);
+
+        let m_prime = self.0.decrypt(&dk_pke, c);
 
         let mut g_hash = vec![];
         g_hash.extend_from_slice(&m_prime);
-        g_hash.extend_from_slice(h);
+        g_hash.extend_from_slice(&dk.2[32..64]);
         let (mut k_prime, r_prime) = g(&g_hash);
 
         let mut j_hash = vec![];
-        j_hash.extend_from_slice(z);
+        j_hash.extend_from_slice(&dk.2[64..96]);
         j_hash.extend_from_slice(c);
         let k_bar = j(&j_hash);
 
         let m_prime_slice: [u8; 32] = m_prime.as_slice().try_into().expect("");
-        let c_prime = self.0.encrypt(ek_pke, &m_prime_slice, &r_prime);
+        let c_prime = self.0.encrypt(&ek_pke, &m_prime_slice, &r_prime);
 
         let cond = !(c.ct_eq(&c_prime));
 
@@ -84,7 +130,7 @@ impl<P: PolyParams> MlKem<P> {
     ///
     /// Output : encapsulation key ek in B^(384*k + 32)
     /// Output : decapsulation key dk in B^(768*k + 96)
-    pub fn key_gen(&self) -> (Vec<u8>, Vec<u8>) {
+    fn key_gen(&self) -> (Self::EncapsKey, Self::DecapsKey) {
         let mut d = [0u8; 32];
         OsRng.fill_bytes(&mut d);
 
@@ -100,7 +146,7 @@ impl<P: PolyParams> MlKem<P> {
     /// Input : encapsulation key ek in B^(384*k + 32)
     /// Output : shared secret key K in B^32
     /// Output : ciphertext c in B^(32 * (d_u*k + d_v))
-    pub fn encaps(&self, ek: &[u8]) -> (Vec<u8>, Vec<u8>) {
+    fn encaps(&self, ek: &Self::EncapsKey) -> (Vec<u8>, Vec<u8>) {
         let mut m = [0u8; 32];
         OsRng.fill_bytes(&mut m);
 
@@ -113,7 +159,7 @@ impl<P: PolyParams> MlKem<P> {
     /// Input : decapsulation key dk in B^(768*k + 96)
     /// Input : ciphertext c in B^(32 * (d_u*k + d_v))
     /// Output : shared secret key K in B^32
-    pub fn decaps(&self, dk: &[u8], c: &[u8]) -> Vec<u8> {
+    fn decaps(&self, dk: &Self::DecapsKey, c: &[u8]) -> Vec<u8> {
         self.decaps_internal(dk, c)
     }
 }
@@ -121,12 +167,12 @@ impl<P: PolyParams> MlKem<P> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::constants::KyberParams;
+    use crate::{constants::KyberParams, hash::h};
 
     #[test]
     fn basics() {
-        let (k, eta_1, eta_2, d_u, d_v) = (3, 2, 2, 10, 4);
-        let kem_scheme = MlKem::<KyberParams>::new(k, eta_1, eta_2, d_u, d_v);
+        let (_k, eta_1, eta_2, d_u, d_v) = (3, 2, 2, 10, 4);
+        let kem_scheme = MlKem::<3, KyberParams>::new(eta_1, eta_2, d_u, d_v);
 
         let d = h(b"randomness d");
         let z = j(b"randomness z");

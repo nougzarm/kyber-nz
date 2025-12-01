@@ -2,9 +2,9 @@ use crate::constants::PolyParams;
 use crate::conversion::{byte_decode, byte_encode, compress, decompress};
 use crate::hash::{g, prf};
 use crate::polynomial::{Polynomial, PolynomialNTT};
+use crate::traits::PkeScheme;
 
-pub struct KPke<P: PolyParams> {
-    pub k: usize,
+pub struct KPke<const K: usize, P: PolyParams> {
     eta_1: usize,
     eta_2: usize,
     d_u: usize,
@@ -12,10 +12,9 @@ pub struct KPke<P: PolyParams> {
     _marker: std::marker::PhantomData<P>,
 }
 
-impl<P: PolyParams> KPke<P> {
-    pub fn new(k: usize, eta_1: usize, eta_2: usize, d_u: usize, d_v: usize) -> Self {
-        KPke::<P> {
-            k,
+impl<const K: usize, P: PolyParams> KPke<K, P> {
+    pub fn new(eta_1: usize, eta_2: usize, d_u: usize, d_v: usize) -> Self {
+        KPke::<K, P> {
             eta_1,
             eta_2,
             d_u,
@@ -23,22 +22,33 @@ impl<P: PolyParams> KPke<P> {
             _marker: std::marker::PhantomData::<P>,
         }
     }
+}
+
+pub struct PkeDecryptKey<const K: usize>(pub [[u8; 384]; K]);
+
+pub struct PkeEncryptKey<const K: usize>(pub [[u8; 384]; K], pub [u8; 32]);
+
+impl<const K: usize, P: PolyParams> PkeScheme for KPke<K, P> {
+    type DecryptKey = PkeDecryptKey<K>;
+    type EncryptKey = PkeEncryptKey<K>;
 
     /// Algorithm 13 (FIPS 203) : K-PKE.KeyGen(d)
     ///
     /// Input : randomness d in B^32
     /// Output : (ek, dk) pair of encryption-decryption keys
     /// with : ek in B^(384*k + 32), and dk in B^(384*k)
-    pub fn key_gen(&self, d: &[u8; 32]) -> (Vec<u8>, Vec<u8>) {
-        let mut d_tmp = d.to_vec();
-        d_tmp.extend_from_slice(&[self.k as u8]);
-        let (rho, gamma) = g(&d_tmp);
+    fn key_gen(&self, d: &[u8; 32]) -> (Self::EncryptKey, Self::DecryptKey) {
+        let mut d_ext = [0u8; 33];
+        d_ext[0..32].copy_from_slice(d);
+        d_ext[32] = K as u8;
 
-        let mut n_var = 0usize;
+        let (rho, gamma) = g(&d_ext);
 
-        let mut a_ntt: Vec<PolynomialNTT<P>> = Vec::with_capacity(self.k * self.k);
-        for i in 0..self.k {
-            for j in 0..self.k {
+        let mut n_var = 0u8;
+
+        let mut a_ntt: Vec<PolynomialNTT<P>> = Vec::with_capacity(K * K);
+        for i in 0..K {
+            for j in 0..K {
                 let mut input = [0u8; 34];
                 input[0..32].copy_from_slice(&rho);
                 input[32] = j as u8;
@@ -48,18 +58,18 @@ impl<P: PolyParams> KPke<P> {
         }
 
         let mut s: Vec<Polynomial<P>> = vec![];
-        for _i in 0..self.k {
+        for _i in 0..K {
             s.push(Polynomial::<P>::sample_poly_cbd(
-                &prf(self.eta_1, &gamma, &[n_var as u8]),
+                &prf(self.eta_1, &gamma, &[n_var]),
                 self.eta_1,
             ));
             n_var += 1;
         }
 
         let mut e: Vec<Polynomial<P>> = vec![];
-        for _i in 0..self.k {
+        for _i in 0..K {
             e.push(Polynomial::<P>::sample_poly_cbd(
-                &prf(self.eta_1, &gamma, &[n_var as u8]),
+                &prf(self.eta_1, &gamma, &[n_var]),
                 self.eta_1,
             ));
             n_var += 1;
@@ -68,12 +78,12 @@ impl<P: PolyParams> KPke<P> {
         let s_ntt: Vec<PolynomialNTT<P>> = s.iter().map(|poly| poly.to_ntt()).collect();
         let e_ntt: Vec<PolynomialNTT<P>> = e.iter().map(|poly| poly.to_ntt()).collect();
 
-        let mut t_ntt: Vec<PolynomialNTT<P>> = Vec::with_capacity(self.k);
-        for i in 0..self.k {
+        let mut t_ntt: Vec<PolynomialNTT<P>> = Vec::with_capacity(K);
+        for i in 0..K {
             let mut pol_temp = PolynomialNTT::<P>::from([0i16; 256]);
 
             for (j, poly) in s_ntt.iter().enumerate() {
-                let product = &a_ntt[i * self.k + j] * poly;
+                let product = &a_ntt[i * K + j] * poly;
                 pol_temp += &product;
             }
 
@@ -83,18 +93,21 @@ impl<P: PolyParams> KPke<P> {
 
         const CONST_D: usize = 12;
 
-        let mut ek = Vec::new();
-        for poly in &t_ntt {
-            ek.extend(byte_encode(&poly.coeffs, CONST_D));
-        }
-        ek.extend_from_slice(&rho);
+        let mut ek_content = [[0u8; 384]; K];
 
-        let mut dk = Vec::new();
-        for poly in &s_ntt {
-            dk.extend(byte_encode(&poly.coeffs, CONST_D));
+        for (i, poly) in t_ntt.iter().enumerate() {
+            ek_content[i].copy_from_slice(&byte_encode(&poly.coeffs, CONST_D));
         }
 
-        (ek, dk)
+        let mut dk_content = [[0u8; 384]; K];
+        for (i, poly) in s_ntt.iter().enumerate() {
+            dk_content[i].copy_from_slice(&byte_encode(&poly.coeffs, CONST_D));
+        }
+
+        (
+            PkeEncryptKey::<K>(ek_content, rho),
+            PkeDecryptKey::<K>(dk_content),
+        )
     }
 
     /// Algorithm 14 (FIPS 203) : K-PKE.Encrypt(ek, m, r)
@@ -103,19 +116,19 @@ impl<P: PolyParams> KPke<P> {
     /// Input : message m in B^32
     /// Input : randomness r in B^32
     /// Output : ciphertext c in B^(32 * (d_u * k + d_v))
-    pub fn encrypt(&self, ek: &[u8], m: &[u8; 32], r: &[u8; 32]) -> Vec<u8> {
+    fn encrypt(&self, ek: &Self::EncryptKey, m: &[u8; 32], r: &[u8; 32]) -> Vec<u8> {
         let mut n_var = 0usize;
-        let mut t_ntt = Vec::with_capacity(self.k * self.k);
-        for i in 0..self.k {
-            let chunk = &ek[384 * i..384 * (i + 1)];
+        let mut t_ntt = Vec::with_capacity(K * K);
+        for i in 0..K {
+            let chunk = &ek.0[i];
             let coeffs = byte_decode(chunk, 12, P::Q);
             t_ntt.push(PolynomialNTT::<P>::from_slice(coeffs.as_slice()));
         }
-        let rho = &ek[384 * self.k..];
+        let rho = &ek.1;
 
-        let mut a_ntt = Vec::with_capacity(self.k * self.k);
-        for i in 0..self.k {
-            for j in 0..self.k {
+        let mut a_ntt = Vec::with_capacity(K * K);
+        for i in 0..K {
+            for j in 0..K {
                 let mut input = [0u8; 34];
                 input[0..32].copy_from_slice(rho);
                 input[32] = j as u8;
@@ -124,8 +137,8 @@ impl<P: PolyParams> KPke<P> {
             }
         }
 
-        let mut y = Vec::with_capacity(self.k);
-        for _i in 0..self.k {
+        let mut y = Vec::with_capacity(K);
+        for _i in 0..K {
             y.push(Polynomial::<P>::sample_poly_cbd(
                 &prf(self.eta_1, r, &[n_var as u8]),
                 self.eta_1,
@@ -133,8 +146,8 @@ impl<P: PolyParams> KPke<P> {
             n_var += 1;
         }
 
-        let mut e_1 = Vec::with_capacity(self.k);
-        for _i in 0..self.k {
+        let mut e_1 = Vec::with_capacity(K);
+        for _i in 0..K {
             e_1.push(Polynomial::<P>::sample_poly_cbd(
                 &prf(self.eta_2, r, &[n_var as u8]),
                 self.eta_2,
@@ -145,11 +158,11 @@ impl<P: PolyParams> KPke<P> {
         let e_2 = Polynomial::<P>::sample_poly_cbd(&prf(self.eta_2, r, &[n_var as u8]), self.eta_2);
         let y_ntt: Vec<PolynomialNTT<P>> = y.iter().map(|p| p.to_ntt()).collect();
 
-        let mut u = Vec::with_capacity(self.k);
+        let mut u = Vec::with_capacity(K);
         for (i, poly) in e_1.iter().enumerate() {
             let mut pol_tmp = PolynomialNTT::<P>::from([0i16; 256]);
-            for j in 0..self.k {
-                let product = &a_ntt[j * self.k + i] * &y_ntt[j];
+            for j in 0..K {
+                let product = &a_ntt[j * K + i] * &y_ntt[j];
                 pol_tmp += &product;
             }
             u.push(&Polynomial::<P>::from_ntt(&pol_tmp) + poly);
@@ -160,7 +173,7 @@ impl<P: PolyParams> KPke<P> {
         let mu = Polynomial::<P>::from_slice(&mu_coeffs);
 
         let mut v_ntt_tmp = PolynomialNTT::<P>::from([0i16; 256]);
-        for i in 0..self.k {
+        for i in 0..K {
             v_ntt_tmp += &(&t_ntt[i] * &y_ntt[i]);
         }
         let v = &(&Polynomial::<P>::from_ntt(&v_ntt_tmp) + &e_2) + &mu;
@@ -191,12 +204,12 @@ impl<P: PolyParams> KPke<P> {
     /// Input : decryption key dk in B^(384*k)
     /// Input : ciphertext c in B^(32 * (d_u*k + d_v))
     /// Output : message m in B^32
-    pub fn decrypt(&self, dk: &[u8], c: &[u8]) -> Vec<u8> {
-        let c_1 = &c[0..32 * self.d_u * self.k];
-        let c_2 = &c[32 * self.d_u * self.k..];
+    fn decrypt(&self, dk: &Self::DecryptKey, c: &[u8]) -> Vec<u8> {
+        let c_1 = &c[0..32 * self.d_u * K];
+        let c_2 = &c[32 * self.d_u * K..];
 
-        let mut u_prime = Vec::with_capacity(self.k);
-        for i in 0..self.k {
+        let mut u_prime = Vec::with_capacity(K);
+        for i in 0..K {
             let decode = byte_decode(
                 &c_1[32 * self.d_u * i..32 * self.d_u * (i + 1)],
                 self.d_u,
@@ -216,15 +229,15 @@ impl<P: PolyParams> KPke<P> {
             .collect();
         let v_prime = Polynomial::<P>::from_slice(v_coeffs.as_slice());
 
-        let mut s_ntt = Vec::with_capacity(self.k);
-        for i in 0..self.k {
-            let chunk = &dk[384 * i..384 * (i + 1)];
+        let mut s_ntt = Vec::with_capacity(K);
+        for i in 0..K {
+            let chunk = &dk.0[i];
             let coeffs = byte_decode(chunk, 12, P::Q);
             s_ntt.push(PolynomialNTT::<P>::from_slice(coeffs.as_slice()));
         }
 
         let mut pdt_tmp = PolynomialNTT::<P>::from([0i16; 256]);
-        for i in 0..self.k {
+        for i in 0..K {
             pdt_tmp += &(&s_ntt[i] * &u_prime[i].to_ntt());
         }
         let w = &v_prime - &Polynomial::<P>::from_ntt(&pdt_tmp);
@@ -246,8 +259,8 @@ mod tests {
 
     #[test]
     fn basics() {
-        let (k, eta_1, eta_2, d_u, d_v) = (3, 2, 2, 10, 4);
-        let pke_scheme = KPke::<KyberParams>::new(k, eta_1, eta_2, d_u, d_v);
+        let (_k, eta_1, eta_2, d_u, d_v) = (3, 2, 2, 10, 4);
+        let pke_scheme = KPke::<3, KyberParams>::new(eta_1, eta_2, d_u, d_v);
 
         let seed = b"Salut de la part de moi meme lee";
         let (ek, dk) = pke_scheme.key_gen(seed);

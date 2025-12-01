@@ -1,18 +1,19 @@
 use hex;
 use kyber_rs::constants::KyberParams;
 use kyber_rs::kem_scheme::MlKem;
+use kyber_rs::traits::KemScheme;
 
-fn run_kem_test(k: usize, eta_1: usize, eta_2: usize, du: usize, dv: usize, test_name: &str) {
+fn run_kem_test<const K: usize>(eta_1: usize, eta_2: usize, du: usize, dv: usize, test_name: &str) {
     println!("\n--- Running the test : {} ---", test_name);
 
-    let kem = MlKem::<KyberParams>::new(k, eta_1, eta_2, du, dv);
+    let kem = MlKem::<K, KyberParams>::new(eta_1, eta_2, du, dv);
 
     let (ek, dk) = kem.key_gen();
-    println!(
+    /* println!(
         "  Generated keys (ek: {} bytes, dk: {} bytes)",
         ek.len(),
         dk.len()
-    );
+    ); */
 
     let (k_encaps, c) = kem.encaps(&ek);
     println!("  Encapsulated key (K) : {}", hex::encode(&k_encaps));
@@ -31,15 +32,15 @@ fn run_kem_test(k: usize, eta_1: usize, eta_2: usize, du: usize, dv: usize, test
 
 #[test]
 fn test_ml_kem_512() {
-    run_kem_test(2, 3, 2, 10, 4, "ML-KEM-512");
+    run_kem_test::<2>(3, 2, 10, 4, "ML-KEM-512");
 }
 
 #[test]
 fn test_ml_kem_768() {
-    run_kem_test(3, 2, 2, 10, 4, "ML-KEM-768");
+    run_kem_test::<3>(2, 2, 10, 4, "ML-KEM-768");
 }
 
 #[test]
 fn test_ml_kem_1024() {
-    run_kem_test(4, 2, 2, 11, 5, "ML-KEM-1024");
+    run_kem_test::<4>(2, 2, 11, 5, "ML-KEM-1024");
 }
