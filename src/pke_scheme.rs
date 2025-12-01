@@ -99,12 +99,12 @@ impl<const K: usize, P: PolyParams> PkeScheme for KPke<K, P> {
         let mut ek_content = [[0u8; 384]; K];
 
         for (i, poly) in t_ntt.iter().enumerate() {
-            ek_content[i].copy_from_slice(&byte_encode(&poly.coeffs, CONST_D));
+            ek_content[i].copy_from_slice(&byte_encode(&poly.coeffs, CONST_D).unwrap());
         }
 
         let mut dk_content = [[0u8; 384]; K];
         for (i, poly) in s_ntt.iter().enumerate() {
-            dk_content[i].copy_from_slice(&byte_encode(&poly.coeffs, CONST_D));
+            dk_content[i].copy_from_slice(&byte_encode(&poly.coeffs, CONST_D).unwrap());
         }
 
         (
@@ -188,7 +188,7 @@ impl<const K: usize, P: PolyParams> PkeScheme for KPke<K, P> {
                 .iter()
                 .map(|&c| compress(c, self.d_u, P::Q))
                 .collect();
-            c1.extend(byte_encode(compressed.as_slice(), self.d_u));
+            c1.extend(byte_encode(compressed.as_slice(), self.d_u).unwrap());
         }
 
         let compressed_v: Vec<i16> = v
@@ -196,7 +196,7 @@ impl<const K: usize, P: PolyParams> PkeScheme for KPke<K, P> {
             .iter()
             .map(|&c| compress(c, self.d_v, P::Q))
             .collect();
-        let c2 = byte_encode(compressed_v.as_slice(), self.d_v);
+        let c2 = byte_encode(compressed_v.as_slice(), self.d_v).unwrap();
 
         c1.extend_from_slice(&c2);
         c1
@@ -251,7 +251,7 @@ impl<const K: usize, P: PolyParams> PkeScheme for KPke<K, P> {
             .map(|&coeff| compress(coeff, 1, P::Q))
             .collect();
 
-        byte_encode(compressed_w.as_slice(), 1)
+        byte_encode(compressed_w.as_slice(), 1).unwrap()
     }
 }
 

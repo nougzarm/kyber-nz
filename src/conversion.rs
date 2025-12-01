@@ -1,3 +1,5 @@
+use crate::errors::Error;
+
 pub fn compress(x: i16, d: usize, q: i16) -> i16 {
     let two_pow_d = 1i32 << d;
 
@@ -19,9 +21,9 @@ pub fn decompress(x: i16, d: usize, q: i16) -> i16 {
 ///
 /// Input : b in {0, 1}^(8*r)
 /// Output : B in B^r
-pub fn bits_to_bytes(bits: &[u8]) -> Vec<u8> {
+pub fn bits_to_bytes(bits: &[u8]) -> Result<Vec<u8>, Error> {
     if !bits.len().is_multiple_of(8) {
-        panic!("")
+        return Err(Error::InvalidInputLength);
     }
 
     let mut bytes = vec![0u8; bits.len() / 8];
@@ -30,7 +32,7 @@ pub fn bits_to_bytes(bits: &[u8]) -> Vec<u8> {
             bytes[i / 8] |= 1 << (i % 8);
         }
     }
-    bytes
+    Ok(bytes)
 }
 
 /// Algorithm 4 (FIPS 203) : BytesToBits(B)
@@ -54,7 +56,7 @@ pub fn bytes_to_bits(bytes: &[u8]) -> Vec<u8> {
 ///
 /// Input : integer array F in Z_m^N, where m = 2^d if d < 12, and m = Q if d = 12
 /// Output : B in B^(32*d)
-pub fn byte_encode(f: &[i16], d: usize) -> Vec<u8> {
+pub fn byte_encode(f: &[i16], d: usize) -> Result<Vec<u8>, Error> {
     let mut bits = vec![0u8; f.len() * d];
     for (i, coeff) in f.iter().enumerate() {
         for j in 0..d {
@@ -102,7 +104,7 @@ mod tests {
         assert_eq!(compress(decompress(2001, 11, q), 11, q), 2001);
 
         let bytes = b"salut tous le monde. Comment allez vous";
-        assert_eq!(bits_to_bytes(&bytes_to_bits(bytes)), bytes);
+        assert_eq!(bits_to_bytes(&bytes_to_bits(bytes)).unwrap(), bytes);
 
         let b = vec![
             1, 1, 0, 0, 1, 1, 1, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1,
@@ -117,11 +119,11 @@ mod tests {
             1, 1, 0, 0, 1, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1,
             1, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 0, 0, 1, 1, 1, 0,
         ];
-        assert_eq!(bytes_to_bits(&bits_to_bytes(&b)), b);
+        assert_eq!(bytes_to_bits(&bits_to_bytes(&b).unwrap()), b);
 
         let f =
             PolynomialNTT::<KyberParams>::sample_ntt(b"Salut de la part de moi meme le ka").coeffs;
-        let f_rev = byte_decode(&byte_encode(&f, 12), 12, q);
+        let f_rev = byte_decode(&byte_encode(&f, 12).unwrap(), 12, q);
         assert_eq!(&f, &f_rev.as_slice());
     }
 }
