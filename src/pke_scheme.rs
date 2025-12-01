@@ -62,19 +62,25 @@ impl<const K: usize, P: PolyParams> PkeScheme for KPke<K, P> {
 
         let mut s: Vec<Polynomial<P>> = vec![];
         for _i in 0..K {
-            s.push(Polynomial::<P>::sample_poly_cbd(
-                &prf(self.eta_1, &gamma, &[n_var]),
-                self.eta_1,
-            ));
+            s.push(
+                Polynomial::<P>::sample_poly_cbd(
+                    &prf(self.eta_1, &gamma, &[n_var]).unwrap(),
+                    self.eta_1,
+                )
+                .unwrap(),
+            );
             n_var += 1;
         }
 
         let mut e: Vec<Polynomial<P>> = vec![];
         for _i in 0..K {
-            e.push(Polynomial::<P>::sample_poly_cbd(
-                &prf(self.eta_1, &gamma, &[n_var]),
-                self.eta_1,
-            ));
+            e.push(
+                Polynomial::<P>::sample_poly_cbd(
+                    &prf(self.eta_1, &gamma, &[n_var]).unwrap(),
+                    self.eta_1,
+                )
+                .unwrap(),
+            );
             n_var += 1;
         }
 
@@ -125,7 +131,7 @@ impl<const K: usize, P: PolyParams> PkeScheme for KPke<K, P> {
         for i in 0..K {
             let chunk = &ek.0[i];
             let coeffs = byte_decode(chunk, 12, P::Q);
-            t_ntt.push(PolynomialNTT::<P>::from_slice(coeffs.as_slice()));
+            t_ntt.push(PolynomialNTT::<P>::from_slice(coeffs.as_slice()).unwrap());
         }
         let rho = &ek.1;
 
@@ -142,23 +148,33 @@ impl<const K: usize, P: PolyParams> PkeScheme for KPke<K, P> {
 
         let mut y = Vec::with_capacity(K);
         for _i in 0..K {
-            y.push(Polynomial::<P>::sample_poly_cbd(
-                &prf(self.eta_1, r, &[n_var as u8]),
-                self.eta_1,
-            ));
+            y.push(
+                Polynomial::<P>::sample_poly_cbd(
+                    &prf(self.eta_1, r, &[n_var as u8]).unwrap(),
+                    self.eta_1,
+                )
+                .unwrap(),
+            );
             n_var += 1;
         }
 
         let mut e_1 = Vec::with_capacity(K);
         for _i in 0..K {
-            e_1.push(Polynomial::<P>::sample_poly_cbd(
-                &prf(self.eta_2, r, &[n_var as u8]),
-                self.eta_2,
-            ));
+            e_1.push(
+                Polynomial::<P>::sample_poly_cbd(
+                    &prf(self.eta_2, r, &[n_var as u8]).unwrap(),
+                    self.eta_2,
+                )
+                .unwrap(),
+            );
             n_var += 1;
         }
 
-        let e_2 = Polynomial::<P>::sample_poly_cbd(&prf(self.eta_2, r, &[n_var as u8]), self.eta_2);
+        let e_2 = Polynomial::<P>::sample_poly_cbd(
+            &prf(self.eta_2, r, &[n_var as u8]).unwrap(),
+            self.eta_2,
+        )
+        .unwrap();
         let y_ntt: Vec<PolynomialNTT<P>> = y.iter().map(|p| p.to_ntt()).collect();
 
         let mut u = Vec::with_capacity(K);
@@ -173,7 +189,7 @@ impl<const K: usize, P: PolyParams> PkeScheme for KPke<K, P> {
 
         let m_bits = byte_decode(m, 1, P::Q);
         let mu_coeffs: Vec<i16> = m_bits.into_iter().map(|b| decompress(b, 1, P::Q)).collect();
-        let mu = Polynomial::<P>::from_slice(&mu_coeffs);
+        let mu = Polynomial::<P>::from_slice(&mu_coeffs).unwrap();
 
         let mut v_ntt_tmp = PolynomialNTT::<P>::from([0i16; 256]);
         for i in 0..K {
@@ -222,7 +238,7 @@ impl<const K: usize, P: PolyParams> PkeScheme for KPke<K, P> {
                 .into_iter()
                 .map(|val| decompress(val, self.d_u, P::Q))
                 .collect();
-            u_prime.push(Polynomial::<P>::from_slice(coeffs.as_slice()));
+            u_prime.push(Polynomial::<P>::from_slice(coeffs.as_slice()).unwrap());
         }
 
         let decoded_v = byte_decode(c_2, self.d_v, P::Q);
@@ -230,13 +246,13 @@ impl<const K: usize, P: PolyParams> PkeScheme for KPke<K, P> {
             .into_iter()
             .map(|val| decompress(val, self.d_v, P::Q))
             .collect();
-        let v_prime = Polynomial::<P>::from_slice(v_coeffs.as_slice());
+        let v_prime = Polynomial::<P>::from_slice(v_coeffs.as_slice()).unwrap();
 
         let mut s_ntt = Vec::with_capacity(K);
         for i in 0..K {
             let chunk = &dk.0[i];
             let coeffs = byte_decode(chunk, 12, P::Q);
-            s_ntt.push(PolynomialNTT::<P>::from_slice(coeffs.as_slice()));
+            s_ntt.push(PolynomialNTT::<P>::from_slice(coeffs.as_slice()).unwrap());
         }
 
         let mut pdt_tmp = PolynomialNTT::<P>::from([0i16; 256]);

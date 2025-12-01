@@ -8,7 +8,7 @@ use std::{
     ops::{Add, AddAssign, Index, IndexMut, Mul, Sub},
 };
 
-use crate::{constants::PolyParams, conversion::bytes_to_bits};
+use crate::{constants::PolyParams, conversion::bytes_to_bits, errors::Error};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Polynomial<P: PolyParams> {
@@ -38,13 +38,13 @@ impl<P: PolyParams> Polynomial<P> {
         Polynomial::<P>::from(*coeffs)
     }
 
-    pub fn from_slice(coeffs: &[i16]) -> Self {
+    pub fn from_slice(coeffs: &[i16]) -> Result<Self, Error> {
         if coeffs.len() != 256 {
-            panic!("The polynomial must have exactly {} coefficients", 256);
+            return Err(Error::InvalidInputLength);
         }
         let mut new_coeffs = [0i16; 256];
         new_coeffs.copy_from_slice(coeffs);
-        Polynomial::<P>::from(new_coeffs)
+        Ok(Polynomial::<P>::from(new_coeffs))
     }
 
     /// Algorithm 8 (FIPS 203) : SimplePolyCBD_eta(B)
@@ -52,13 +52,13 @@ impl<P: PolyParams> Polynomial<P> {
     /// Input : B in B^(64*eta)
     /// avec eta dans {2, 3}
     /// Output : f in Polynomial
-    pub fn sample_poly_cbd(b: &[u8], eta: usize) -> Self {
+    pub fn sample_poly_cbd(b: &[u8], eta: usize) -> Result<Self, Error> {
         if (eta != 2) && (eta != 3) {
-            panic!("Unauthorized value for eta")
+            return Err(Error::InvalidEta);
         }
 
         if b.len() != 64 * eta {
-            panic!("Unauthorized length for b")
+            return Err(Error::InvalidInputLength);
         };
 
         let b_bits = bytes_to_bits(b);
@@ -74,7 +74,7 @@ impl<P: PolyParams> Polynomial<P> {
             }
             coeffs[i] = (x - y).rem_euclid(P::Q);
         }
-        Polynomial::<P>::from(coeffs)
+        Ok(Polynomial::<P>::from(coeffs))
     }
 
     /// Algorithm 9 (FIPS 203) : NTT(f)
@@ -267,13 +267,13 @@ impl<P: PolyParams> From<[i16; 256]> for PolynomialNTT<P> {
 }
 
 impl<P: PolyParams> PolynomialNTT<P> {
-    pub fn from_slice(coeffs: &[i16]) -> Self {
+    pub fn from_slice(coeffs: &[i16]) -> Result<Self, Error> {
         if coeffs.len() != 256 {
-            panic!("The polynomial must have exactly {} coefficients", 256);
+            return Err(Error::InvalidInputLength);
         }
         let mut new_coeffs = [0i16; 256];
         new_coeffs.copy_from_slice(coeffs);
-        PolynomialNTT::<P>::from(new_coeffs)
+        Ok(PolynomialNTT::<P>::from(new_coeffs))
     }
 
     /// Algorithm 7 : SampleNTT(B)
@@ -380,15 +380,15 @@ mod tests {
 
         let mut a_coeffs: Vec<i16> = vec![1, 0, 2, 3, 18, 32, 72, 21, 23, 1, 0, 9, 287, 23];
         a_coeffs.extend_from_slice(&[0i16; KyberParams::N - 14]);
-        let a = KyberPoly::from_slice(&a_coeffs);
+        let a = KyberPoly::from_slice(&a_coeffs).unwrap();
         assert_eq!(KyberPoly::from_ntt(&a.to_ntt()).coeffs, a.coeffs);
 
         let mut p1_coeffs: Vec<i16> = vec![1, 2, 4, 4, 3, 1, 6, 6, 4, 3];
         p1_coeffs.extend_from_slice(&[0i16; KyberParams::N - 10]);
         let mut p2_coeffs: Vec<i16> = vec![3, 4, 8, 10, 27, 273, 12, 982, 12, 42, 9];
         p2_coeffs.extend_from_slice(&[0i16; KyberParams::N - 11]);
-        let p1 = KyberPoly::from_slice(&p1_coeffs);
-        let p2 = KyberPoly::from_slice(&p2_coeffs);
+        let p1 = KyberPoly::from_slice(&p1_coeffs).unwrap();
+        let p2 = KyberPoly::from_slice(&p2_coeffs).unwrap();
         assert_eq!(
             KyberPoly::from_ntt(&(&p1.to_ntt() * &p2.to_ntt())).coeffs,
             (&p1 * &p2).coeffs
