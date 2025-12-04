@@ -120,9 +120,9 @@ impl<const K: usize, P: PolyParams> KemScheme for MlKem<K, P> {
 
         let m_prime = self.0.decrypt(&dk_pke, c);
 
-        let mut g_hash = vec![];
-        g_hash.extend_from_slice(&m_prime);
-        g_hash.extend_from_slice(&dk.2[32..64]);
+        let mut g_hash = [0u8; 64];
+        g_hash[..32].copy_from_slice(&m_prime);
+        g_hash[32..].copy_from_slice(&dk.2[32..64]);
         let (mut k_prime, r_prime) = g(&g_hash);
 
         let mut j_hash = vec![];

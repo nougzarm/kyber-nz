@@ -9,8 +9,8 @@ use crate::traits::PkeScheme;
 pub struct KPke<const K: usize, P: PolyParams> {
     eta_1: usize,
     eta_2: usize,
-    d_u: usize,
-    d_v: usize,
+    pub d_u: usize,
+    pub d_v: usize,
     _marker: std::marker::PhantomData<P>,
 }
 
