@@ -8,7 +8,7 @@ use std::{
     ops::{Add, AddAssign, Index, IndexMut, Mul, Sub},
 };
 
-use crate::{constants::PolyParams, conversion::bytes_to_bits, errors::Error};
+use crate::{constants::PolyParams, conversion::get_bit, errors::Error};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Polynomial<P: PolyParams> {
@@ -57,22 +57,17 @@ impl<P: PolyParams> Polynomial<P> {
             return Err(Error::InvalidEta);
         }
 
-        if b.len() != 64 * eta {
-            return Err(Error::InvalidInputLength);
-        };
-
-        let b_bits = bytes_to_bits(b);
         let mut coeffs = [0i16; 256];
-        for i in 0..P::N {
+        for (i, coeff) in coeffs.iter_mut().enumerate() {
             let mut x = 0i16;
             for j in 0..eta {
-                x += b_bits[2 * i * eta + j] as i16;
+                x += get_bit(b, 2 * i * eta + j);
             }
             let mut y = 0i16;
             for j in 0..eta {
-                y += b_bits[2 * i * eta + eta + j] as i16;
+                y += get_bit(b, 2 * i * eta + eta + j);
             }
-            coeffs[i] = (x - y).rem_euclid(P::Q);
+            *coeff = (x - y).rem_euclid(P::Q);
         }
         Ok(Polynomial::<P>::from(coeffs))
     }

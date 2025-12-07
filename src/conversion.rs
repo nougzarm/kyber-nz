@@ -16,6 +16,12 @@ pub fn decompress(x: i16, d: usize, q: i16) -> i16 {
     ((numerator + half_divisor) >> d) as i16
 }
 
+pub fn get_bit(bytes: &[u8], index: usize) -> i16 {
+    let byte_index = index / 8;
+    let bit_index = index % 8;
+    ((bytes[byte_index] >> bit_index) & 1) as i16
+}
+
 /// Algorithm 3 (FIPS 203) : BitsToBytes(b)
 /// Converts a bit array (of a length that is a multiple of eight) into an array of bytes.
 ///
