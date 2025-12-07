@@ -5,15 +5,22 @@ use subtle::{ConditionallySelectable, ConstantTimeEq};
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
 use crate::hash::{g, j};
+use crate::params::SecurityLevel;
 use crate::pke_scheme::{PkeDecryptKey, PkeEncryptKey};
 use crate::traits::KemScheme;
 use crate::{constants::PolyParams, pke_scheme::KPke, traits::PkeScheme};
 
-pub struct MlKem<const K: usize, P: PolyParams>(pub KPke<K, P>);
+pub struct MlKem<const K: usize, S: SecurityLevel, P: PolyParams>(pub KPke<K, S, P>);
 
-impl<const K: usize, P: PolyParams> MlKem<K, P> {
-    pub fn new(eta_1: usize, eta_2: usize, d_u: usize, d_v: usize) -> Self {
-        MlKem(KPke::<K, P>::new(eta_1, eta_2, d_u, d_v))
+impl<const K: usize, S: SecurityLevel, P: PolyParams> MlKem<K, S, P> {
+    pub fn new() -> Self {
+        MlKem(KPke::<K, S, P>::new())
+    }
+}
+
+impl<const K: usize, S: SecurityLevel, P: PolyParams> Default for MlKem<K, S, P> {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -37,7 +44,7 @@ impl<const K: usize> KemEncapsKey<K> {
 #[derive(Zeroize, ZeroizeOnDrop)]
 pub struct KemSharedSecret(pub [u8; 32]);
 
-impl<const K: usize, P: PolyParams> KemScheme for MlKem<K, P> {
+impl<const K: usize, S: SecurityLevel, P: PolyParams> KemScheme for MlKem<K, S, P> {
     type DecapsKey = KemDecapsKey<K>;
     type EncapsKey = KemEncapsKey<K>;
     type SharedSecret = KemSharedSecret;
@@ -190,10 +197,17 @@ mod tests {
     use crate::{constants::KyberParams, hash::h};
     use rand::rngs::OsRng;
 
+    struct SecurityL;
+    impl SecurityLevel for SecurityL {
+        const ETA1: usize = 2;
+        const ETA2: usize = 2;
+        const DU: usize = 10;
+        const DV: usize = 4;
+    }
+
     #[test]
     fn basics() {
-        let (_k, eta_1, eta_2, d_u, d_v) = (3, 2, 2, 10, 4);
-        let kem_scheme = MlKem::<3, KyberParams>::new(eta_1, eta_2, d_u, d_v);
+        let kem_scheme = MlKem::<3, SecurityL, KyberParams>::new();
 
         let d = h(b"randomness d");
         let z = j(b"randomness z");

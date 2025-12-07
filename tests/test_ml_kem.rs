@@ -1,13 +1,14 @@
 use hex;
 use kyber_rs::constants::KyberParams;
 use kyber_rs::kem_scheme::{KemDecapsKey, KemEncapsKey, MlKem};
+use kyber_rs::params::{Kyber1024, Kyber512, Kyber768, SecurityLevel};
 use kyber_rs::traits::KemScheme;
 use rand::rngs::OsRng;
 
-fn run_kem_test<const K: usize>(eta_1: usize, eta_2: usize, du: usize, dv: usize, test_name: &str) {
+fn run_kem_test<const K: usize, S: SecurityLevel>(test_name: &str) {
     println!("\n--- Running the test : {} ---", test_name);
 
-    let kem = MlKem::<K, KyberParams>::new(eta_1, eta_2, du, dv);
+    let kem = MlKem::<K, S, KyberParams>::new();
 
     let (ek, dk) = kem.key_gen(&mut OsRng);
     println!(
@@ -33,15 +34,15 @@ fn run_kem_test<const K: usize>(eta_1: usize, eta_2: usize, du: usize, dv: usize
 
 #[test]
 fn test_ml_kem_512() {
-    run_kem_test::<2>(3, 2, 10, 4, "ML-KEM-512");
+    run_kem_test::<2, Kyber512>("ML-KEM-512");
 }
 
 #[test]
 fn test_ml_kem_768() {
-    run_kem_test::<3>(2, 2, 10, 4, "ML-KEM-768");
+    run_kem_test::<3, Kyber768>("ML-KEM-768");
 }
 
 #[test]
 fn test_ml_kem_1024() {
-    run_kem_test::<4>(2, 2, 11, 5, "ML-KEM-1024");
+    run_kem_test::<4, Kyber1024>("ML-KEM-1024");
 }

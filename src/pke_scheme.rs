@@ -3,26 +3,25 @@ use zeroize::{Zeroize, ZeroizeOnDrop};
 use crate::constants::PolyParams;
 use crate::conversion::{byte_decode, byte_encode, compress, decompress};
 use crate::hash::{g, prf};
+use crate::params::SecurityLevel;
 use crate::polynomial::{Polynomial, PolynomialNTT};
 use crate::traits::PkeScheme;
 
-pub struct KPke<const K: usize, P: PolyParams> {
-    eta_1: usize,
-    eta_2: usize,
-    pub d_u: usize,
-    pub d_v: usize,
-    _marker: std::marker::PhantomData<P>,
+pub struct KPke<const K: usize, S: SecurityLevel, P: PolyParams> {
+    _marker: std::marker::PhantomData<(S, P)>,
 }
 
-impl<const K: usize, P: PolyParams> KPke<K, P> {
-    pub fn new(eta_1: usize, eta_2: usize, d_u: usize, d_v: usize) -> Self {
-        KPke::<K, P> {
-            eta_1,
-            eta_2,
-            d_u,
-            d_v,
-            _marker: std::marker::PhantomData::<P>,
+impl<const K: usize, S: SecurityLevel, P: PolyParams> KPke<K, S, P> {
+    pub fn new() -> Self {
+        KPke::<K, S, P> {
+            _marker: std::marker::PhantomData::<(S, P)>,
         }
+    }
+}
+
+impl<const K: usize, S: SecurityLevel, P: PolyParams> Default for KPke<K, S, P> {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -31,7 +30,7 @@ pub struct PkeDecryptKey<const K: usize>(pub [[u8; 384]; K]);
 
 pub struct PkeEncryptKey<const K: usize>(pub [[u8; 384]; K], pub [u8; 32]);
 
-impl<const K: usize, P: PolyParams> PkeScheme for KPke<K, P> {
+impl<const K: usize, S: SecurityLevel, P: PolyParams> PkeScheme for KPke<K, S, P> {
     type DecryptKey = PkeDecryptKey<K>;
     type EncryptKey = PkeEncryptKey<K>;
 
@@ -63,11 +62,8 @@ impl<const K: usize, P: PolyParams> PkeScheme for KPke<K, P> {
         let mut s: Vec<Polynomial<P>> = vec![];
         for _i in 0..K {
             s.push(
-                Polynomial::<P>::sample_poly_cbd(
-                    &prf(self.eta_1, &gamma, &[n_var]).unwrap(),
-                    self.eta_1,
-                )
-                .unwrap(),
+                Polynomial::<P>::sample_poly_cbd(&prf(S::ETA1, &gamma, &[n_var]).unwrap(), S::ETA1)
+                    .unwrap(),
             );
             n_var += 1;
         }
@@ -75,11 +71,8 @@ impl<const K: usize, P: PolyParams> PkeScheme for KPke<K, P> {
         let mut e: Vec<Polynomial<P>> = vec![];
         for _i in 0..K {
             e.push(
-                Polynomial::<P>::sample_poly_cbd(
-                    &prf(self.eta_1, &gamma, &[n_var]).unwrap(),
-                    self.eta_1,
-                )
-                .unwrap(),
+                Polynomial::<P>::sample_poly_cbd(&prf(S::ETA1, &gamma, &[n_var]).unwrap(), S::ETA1)
+                    .unwrap(),
             );
             n_var += 1;
         }
@@ -150,8 +143,8 @@ impl<const K: usize, P: PolyParams> PkeScheme for KPke<K, P> {
         for _i in 0..K {
             y.push(
                 Polynomial::<P>::sample_poly_cbd(
-                    &prf(self.eta_1, r, &[n_var as u8]).unwrap(),
-                    self.eta_1,
+                    &prf(S::ETA1, r, &[n_var as u8]).unwrap(),
+                    S::ETA1,
                 )
                 .unwrap(),
             );
@@ -162,19 +155,17 @@ impl<const K: usize, P: PolyParams> PkeScheme for KPke<K, P> {
         for _i in 0..K {
             e_1.push(
                 Polynomial::<P>::sample_poly_cbd(
-                    &prf(self.eta_2, r, &[n_var as u8]).unwrap(),
-                    self.eta_2,
+                    &prf(S::ETA2, r, &[n_var as u8]).unwrap(),
+                    S::ETA2,
                 )
                 .unwrap(),
             );
             n_var += 1;
         }
 
-        let e_2 = Polynomial::<P>::sample_poly_cbd(
-            &prf(self.eta_2, r, &[n_var as u8]).unwrap(),
-            self.eta_2,
-        )
-        .unwrap();
+        let e_2 =
+            Polynomial::<P>::sample_poly_cbd(&prf(S::ETA2, r, &[n_var as u8]).unwrap(), S::ETA2)
+                .unwrap();
         let y_ntt: Vec<PolynomialNTT<P>> = y.iter().map(|p| p.to_ntt()).collect();
 
         let mut u = Vec::with_capacity(K);
@@ -202,17 +193,13 @@ impl<const K: usize, P: PolyParams> PkeScheme for KPke<K, P> {
             let compressed: Vec<i16> = poly
                 .coeffs
                 .iter()
-                .map(|&c| compress(c, self.d_u, P::Q))
+                .map(|&c| compress(c, S::DU, P::Q))
                 .collect();
-            c1.extend(byte_encode(compressed.as_slice(), self.d_u).unwrap());
+            c1.extend(byte_encode(compressed.as_slice(), S::DU).unwrap());
         }
 
-        let compressed_v: Vec<i16> = v
-            .coeffs
-            .iter()
-            .map(|&c| compress(c, self.d_v, P::Q))
-            .collect();
-        let c2 = byte_encode(compressed_v.as_slice(), self.d_v).unwrap();
+        let compressed_v: Vec<i16> = v.coeffs.iter().map(|&c| compress(c, S::DV, P::Q)).collect();
+        let c2 = byte_encode(compressed_v.as_slice(), S::DV).unwrap();
 
         c1.extend_from_slice(&c2);
         c1
@@ -224,27 +211,23 @@ impl<const K: usize, P: PolyParams> PkeScheme for KPke<K, P> {
     /// Input : ciphertext c in B^(32 * (d_u*k + d_v))
     /// Output : message m in B^32
     fn decrypt(&self, dk: &Self::DecryptKey, c: &[u8]) -> [u8; 32] {
-        let c_1 = &c[0..32 * self.d_u * K];
-        let c_2 = &c[32 * self.d_u * K..];
+        let c_1 = &c[0..32 * S::DU * K];
+        let c_2 = &c[32 * S::DU * K..];
 
         let mut u_prime = Vec::with_capacity(K);
         for i in 0..K {
-            let decode = byte_decode(
-                &c_1[32 * self.d_u * i..32 * self.d_u * (i + 1)],
-                self.d_u,
-                P::Q,
-            );
+            let decode = byte_decode(&c_1[32 * S::DU * i..32 * S::DU * (i + 1)], S::DU, P::Q);
             let coeffs: Vec<i16> = decode
                 .into_iter()
-                .map(|val| decompress(val, self.d_u, P::Q))
+                .map(|val| decompress(val, S::DU, P::Q))
                 .collect();
             u_prime.push(Polynomial::<P>::from_slice(coeffs.as_slice()).unwrap());
         }
 
-        let decoded_v = byte_decode(c_2, self.d_v, P::Q);
+        let decoded_v = byte_decode(c_2, S::DV, P::Q);
         let v_coeffs: Vec<i16> = decoded_v
             .into_iter()
-            .map(|val| decompress(val, self.d_v, P::Q))
+            .map(|val| decompress(val, S::DV, P::Q))
             .collect();
         let v_prime = Polynomial::<P>::from_slice(v_coeffs.as_slice()).unwrap();
 
@@ -278,10 +261,17 @@ mod tests {
     use super::*;
     use crate::constants::KyberParams;
 
+    struct SecurityL;
+    impl SecurityLevel for SecurityL {
+        const ETA1: usize = 2;
+        const ETA2: usize = 2;
+        const DU: usize = 10;
+        const DV: usize = 4;
+    }
+
     #[test]
     fn basics() {
-        let (_k, eta_1, eta_2, d_u, d_v) = (3, 2, 2, 10, 4);
-        let pke_scheme = KPke::<3, KyberParams>::new(eta_1, eta_2, d_u, d_v);
+        let pke_scheme = KPke::<3, SecurityL, KyberParams>::new();
 
         let seed = b"Salut de la part de moi meme lee";
         let (ek, dk) = pke_scheme.key_gen(seed);

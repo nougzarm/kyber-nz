@@ -5,7 +5,7 @@ pub mod conversion;
 pub mod errors;
 pub mod hash;
 pub mod kem_scheme;
-pub mod kyber;
+pub mod params;
 pub mod pke_scheme;
 pub mod polynomial;
 pub mod traits;
