@@ -1,7 +1,7 @@
 use hex;
 use kyber_rs::constants::KyberParams;
 use kyber_rs::kem_scheme::{KemDecapsKey, KemEncapsKey, MlKem};
-use kyber_rs::params::{Kyber1024, Kyber512, Kyber768, SecurityLevel};
+use kyber_rs::params::{Kyber1024Params, Kyber512Params, Kyber768Params, SecurityLevel};
 use kyber_rs::traits::KemScheme;
 use rand::rngs::OsRng;
 
@@ -34,15 +34,15 @@ fn run_kem_test<const K: usize, S: SecurityLevel>(test_name: &str) {
 
 #[test]
 fn test_ml_kem_512() {
-    run_kem_test::<2, Kyber512>("ML-KEM-512");
+    run_kem_test::<2, Kyber512Params>("ML-KEM-512");
 }
 
 #[test]
 fn test_ml_kem_768() {
-    run_kem_test::<3, Kyber768>("ML-KEM-768");
+    run_kem_test::<3, Kyber768Params>("ML-KEM-768");
 }
 
 #[test]
 fn test_ml_kem_1024() {
-    run_kem_test::<4, Kyber1024>("ML-KEM-1024");
+    run_kem_test::<4, Kyber1024Params>("ML-KEM-1024");
 }

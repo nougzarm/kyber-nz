@@ -5,24 +5,24 @@ pub trait SecurityLevel {
     const DV: usize;
 }
 
-pub struct Kyber512;
-pub struct Kyber768;
-pub struct Kyber1024;
+pub struct Kyber512Params;
+pub struct Kyber768Params;
+pub struct Kyber1024Params;
 
-impl SecurityLevel for Kyber512 {
+impl SecurityLevel for Kyber512Params {
     const ETA1: usize = 3;
     const ETA2: usize = 2;
     const DU: usize = 10;
     const DV: usize = 4;
 }
 
-impl SecurityLevel for Kyber768 {
+impl SecurityLevel for Kyber768Params {
     const ETA1: usize = 2;
     const ETA2: usize = 2;
     const DU: usize = 10;
     const DV: usize = 4;
 }
-impl SecurityLevel for Kyber1024 {
+impl SecurityLevel for Kyber1024Params {
     const ETA1: usize = 2;
     const ETA2: usize = 2;
     const DU: usize = 11;
