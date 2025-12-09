@@ -9,6 +9,10 @@ repository = "https://github.com/nougzarm/kyber-nz"
 readme = "README.md"
 keywords = ["crypto", "post-quantum", "kyber", "ml-kem", "kem", "k-pke"]
 categories = ["cryptography"]
+exclude = [
+    "fuzz/*",
+    ".github/*"
+]
 
 [dependencies]
 hex = "0.4.3"

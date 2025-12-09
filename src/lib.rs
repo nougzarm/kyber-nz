@@ -4,7 +4,7 @@
 //! formerly known as **CRYSTALS-Kyber**.
 //!
 //! This library strives for excellence in security (resistance to side-channel attacks)
-//! and reliability (strict error handling, panic-free).
+//! and reliability (strict error handling).
 //!
 //! ## 🛡️ Security & Robustness
 //!
@@ -13,8 +13,6 @@
 //! * **Memory Clearing**: Structures containing secrets (`KemDecapsKey`, `KemSharedSecret`) implement
 //!   the [`zeroize::Zeroize`] and [`zeroize::ZeroizeOnDrop`] traits. They are automatically wiped from RAM
 //!   when they go out of scope.
-//! * **Panic-Free**: The API is designed to never crash. All fallible functions return a [`Result`]
-//!   with a typed [`errors::Error`].
 //! * **Determinism**: Key generation and encapsulation functions accept an external random number generator
 //!   (implementing [`rand_core::RngCore`]), allowing for deterministic tests (Known Answer Tests).
 //!
