@@ -126,11 +126,11 @@ mod tests {
     use super::*;
 
     #[test]
-    fn basics() {
+    fn basics() -> Result<(), Error> {
         let seed_s = b"qjdhfyritoprlkdjfkrjfbdnzyhdjrtr";
         let nonce_b = b"a";
 
-        let prf_result = prf(2, seed_s, nonce_b).unwrap();
+        let prf_result = prf(2, seed_s, nonce_b)?;
         assert_eq!(prf_result, hex::decode("eedb2631fdc3c6748dc567534e90eb016d087e6c088f3de6f815e854e6a78daf4181a01d80f26c1f9d2816f95e2427b8e261cc45dc2a98f96a81db2235b0f4d02c4a6b2ad94e3444dc921fc0ed378bca86a9eec7179c45be3f6b9809a4770012e7cd143872e45b7bf8f34e6819102d5a55f32a1f9d105a8b3dfe25af75d76f93").unwrap());
 
         let h_result = H::evaluate(seed_s);
@@ -157,5 +157,6 @@ mod tests {
                     .unwrap()
             )
         );
+        Ok(())
     }
 }

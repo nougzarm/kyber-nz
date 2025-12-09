@@ -366,7 +366,7 @@ mod tests {
     use crate::{constants::KyberParams, KyberPoly};
 
     #[test]
-    fn basics() {
+    fn basics() -> Result<(), Error> {
         let mut f = KyberPoly::from(0i16);
         let mut g = KyberPoly::from(1i16);
         (f[255], f[2]) = (6i16, 1i16);
@@ -376,18 +376,19 @@ mod tests {
 
         let mut a_coeffs: Vec<i16> = vec![1, 0, 2, 3, 18, 32, 72, 21, 23, 1, 0, 9, 287, 23];
         a_coeffs.extend_from_slice(&[0i16; KyberParams::N - 14]);
-        let a = KyberPoly::from_slice(&a_coeffs).unwrap();
+        let a = KyberPoly::from_slice(&a_coeffs)?;
         assert_eq!(KyberPoly::from_ntt(&a.to_ntt()).coeffs, a.coeffs);
 
         let mut p1_coeffs: Vec<i16> = vec![1, 2, 4, 4, 3, 1, 6, 6, 4, 3];
         p1_coeffs.extend_from_slice(&[0i16; KyberParams::N - 10]);
         let mut p2_coeffs: Vec<i16> = vec![3, 4, 8, 10, 27, 273, 12, 982, 12, 42, 9];
         p2_coeffs.extend_from_slice(&[0i16; KyberParams::N - 11]);
-        let p1 = KyberPoly::from_slice(&p1_coeffs).unwrap();
-        let p2 = KyberPoly::from_slice(&p2_coeffs).unwrap();
+        let p1 = KyberPoly::from_slice(&p1_coeffs)?;
+        let p2 = KyberPoly::from_slice(&p2_coeffs)?;
         assert_eq!(
             KyberPoly::from_ntt(&(&p1.to_ntt() * &p2.to_ntt())).coeffs,
             (&p1 * &p2).coeffs
         );
+        Ok(())
     }
 }

@@ -102,7 +102,7 @@ mod tests {
     use crate::polynomial::PolynomialNTT;
 
     #[test]
-    fn basics() {
+    fn basics() -> Result<(), Error> {
         let q = KyberParams::Q;
         assert_eq!(compress(1933, 11, q), 1189);
         assert_eq!(decompress(compress(1933, 11, q), 11, q), 1933);
@@ -110,7 +110,7 @@ mod tests {
         assert_eq!(compress(decompress(2001, 11, q), 11, q), 2001);
 
         let bytes = b"salut tous le monde. Comment allez vous";
-        assert_eq!(bits_to_bytes(&bytes_to_bits(bytes)).unwrap(), bytes);
+        assert_eq!(bits_to_bytes(&bytes_to_bits(bytes))?, bytes);
 
         let b = vec![
             1, 1, 0, 0, 1, 1, 1, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1,
@@ -125,11 +125,12 @@ mod tests {
             1, 1, 0, 0, 1, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1,
             1, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 0, 0, 1, 1, 1, 0,
         ];
-        assert_eq!(bytes_to_bits(&bits_to_bytes(&b).unwrap()), b);
+        assert_eq!(bytes_to_bits(&bits_to_bytes(&b)?), b);
 
         let f =
             PolynomialNTT::<KyberParams>::sample_ntt(b"Salut de la part de moi meme le ka").coeffs;
-        let f_rev = byte_decode(&byte_encode(&f, 12).unwrap(), 12, q);
+        let f_rev = byte_decode(&byte_encode(&f, 12)?, 12, q);
         assert_eq!(&f, &f_rev.as_slice());
+        Ok(())
     }
 }
