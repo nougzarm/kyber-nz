@@ -1,4 +1,3 @@
-use core::fmt;
 use sha3::{
     digest::{ExtendableOutput, Update, XofReader},
     Shake128,
@@ -199,41 +198,6 @@ impl<P: PolyParams> Mul for &Polynomial<P> {
     }
 }
 
-impl<P: PolyParams> fmt::Display for Polynomial<P> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let mut terms = Vec::new();
-        for i in (0..P::N).rev() {
-            let c = self.coeffs[i];
-            if c == 0 {
-                continue;
-            }
-
-            let mut term_str = String::new();
-
-            if c != 1 || i == 0 {
-                term_str.push_str(&c.to_string());
-            }
-
-            if i > 0 {
-                if c != 1 {
-                    term_str.push('*');
-                }
-                term_str.push('X');
-                if i > 1 {
-                    term_str.push_str(&format!("^{}", i));
-                }
-            }
-            terms.push(term_str);
-        }
-
-        if terms.is_empty() {
-            write!(f, "0")
-        } else {
-            write!(f, "{}", terms.join(" + "))
-        }
-    }
-}
-
 impl<P: PolyParams> Index<usize> for Polynomial<P> {
     type Output = i16;
     fn index(&self, index: usize) -> &Self::Output {
@@ -367,13 +331,6 @@ mod tests {
 
     #[test]
     fn basics() -> Result<(), Error> {
-        let mut f = KyberPoly::from(0i16);
-        let mut g = KyberPoly::from(1i16);
-        (f[255], f[2]) = (6i16, 1i16);
-        (g[19], g[3]) = (43i16, 92i16);
-        println!("Polynomial f + g: {}", &f + &g);
-        println!("Polynomial f * g: {}", &f * &g);
-
         let mut a_coeffs: Vec<i16> = vec![1, 0, 2, 3, 18, 32, 72, 21, 23, 1, 0, 9, 287, 23];
         a_coeffs.extend_from_slice(&[0i16; KyberParams::N - 14]);
         let a = KyberPoly::from_slice(&a_coeffs)?;
