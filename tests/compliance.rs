@@ -60,10 +60,7 @@ where
     let path = Path::new(&filepath);
 
     if !path.exists() {
-        eprintln!(
-            "⚠️  WARNING: File '{}' not found. Test ignored.",
-            filename
-        );
+        eprintln!("⚠️  WARNING: File '{}' not found. Test ignored.", filename);
         return;
     }
 
