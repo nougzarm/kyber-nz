@@ -21,6 +21,6 @@ Add the dependency to your `Cargo.toml` file:
 
 ```toml
 [dependencies]
-kyber-nz = { path = "." } # If local
+kyber-nz = "0.1.0"
 # or via git once hosted
 # kyber-nz = { git = "[https://github.com/nougzarm/kyber-nz](https://github.com/nougzarm/kyber-nz)" }
