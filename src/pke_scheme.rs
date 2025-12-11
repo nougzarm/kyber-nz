@@ -184,7 +184,10 @@ impl<const K: usize, S: SecurityLevel, P: PolyParams> PkeScheme for KPke<K, S, P
             byte_decode(m, 1, P::Q, &mut result)?;
             result
         };
-        let mu_coeffs: Vec<i16> = m_bits.into_iter().map(|b| decompress(b, 1, P::Q)).collect();
+        let mut mu_coeffs = [0i16; 256];
+        for (i, &b) in m_bits.iter().enumerate() {
+            mu_coeffs[i] = decompress(b, 1, P::Q);
+        }
         let mu = Polynomial::<P>::from_slice(&mu_coeffs)?;
 
         let mut v_ntt_tmp = PolynomialNTT::<P>::from([0i16; 256]);
