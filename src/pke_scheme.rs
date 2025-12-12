@@ -177,17 +177,22 @@ impl<const K: usize, S: SecurityLevel, P: PolyParams> PkeScheme for KPke<K, S, P
             byte_decode(m, 1, P::Q, &mut result)?;
             result
         };
-        let mut mu_coeffs = [0i16; 256];
-        for (i, &b) in m_bits.iter().enumerate() {
-            mu_coeffs[i] = decompress(b, 1, P::Q);
-        }
-        let mu = Polynomial::<P>::from_slice(&mu_coeffs)?;
 
-        let mut v_ntt_tmp = PolynomialNTT::<P>::from([0i16; 256]);
-        for i in 0..K {
-            v_ntt_tmp += &(&t_ntt[i] * &y_ntt[i]);
-        }
-        let v = &(&Polynomial::<P>::from_ntt(&v_ntt_tmp) + &e_2) + &mu;
+        let mu = {
+            let mut coeffs = [0i16; 256];
+            for (i, &b) in m_bits.iter().enumerate() {
+                coeffs[i] = decompress(b, 1, P::Q);
+            }
+            Polynomial::<P>::from_slice(&coeffs)?
+        };
+
+        let v = {
+            let mut tmp = PolynomialNTT::<P>::from([0i16; 256]);
+            for i in 0..K {
+                tmp += &(&t_ntt[i] * &y_ntt[i]);
+            }
+            &(&Polynomial::<P>::from_ntt(&tmp) + &e_2) + &mu
+        };
 
         let mut c1 = Vec::new();
         for poly in &u {
@@ -265,11 +270,13 @@ impl<const K: usize, S: SecurityLevel, P: PolyParams> PkeScheme for KPke<K, S, P
             s_ntt.push(PolynomialNTT::<P>::from_slice(coeffs.as_slice())?);
         }
 
-        let mut pdt_tmp = PolynomialNTT::<P>::from([0i16; 256]);
-        for i in 0..K {
-            pdt_tmp += &(&s_ntt[i] * &u_prime[i].to_ntt());
-        }
-        let w = &v_prime - &Polynomial::<P>::from_ntt(&pdt_tmp);
+        let w = {
+            let mut tmp = PolynomialNTT::<P>::from([0i16; 256]);
+            for i in 0..K {
+                tmp += &(&s_ntt[i] * &u_prime[i].to_ntt());
+            }
+            &v_prime - &Polynomial::<P>::from_ntt(&tmp)
+        };
 
         let compressed_w: Vec<i16> = w
             .coeffs
