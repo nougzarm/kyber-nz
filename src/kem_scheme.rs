@@ -56,7 +56,7 @@ impl<const K: usize, S: SecurityLevel, P: PolyParams> KemScheme for MlKem<K, S, 
         z: &[u8; 32],
     ) -> Result<(Self::EncapsKey, Self::DecapsKey), Error> {
         let (pke_encrypt_key, pke_decrypt_key) = self.0.key_gen(d)?;
-        
+
         let h_res: [u8; 32] = {
             let mut h_hash = H::default();
             for slice in &pke_encrypt_key.0 {
