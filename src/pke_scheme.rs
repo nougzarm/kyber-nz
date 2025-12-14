@@ -9,6 +9,7 @@ use crate::params::SecurityLevel;
 use crate::polynomial::{Polynomial, PolynomialNTT};
 use crate::traits::PkeScheme;
 
+#[derive(Default)]
 pub struct KPke<const K: usize, S: SecurityLevel, P: PolyParams> {
     _marker: std::marker::PhantomData<(S, P)>,
 }
@@ -18,12 +19,6 @@ impl<const K: usize, S: SecurityLevel, P: PolyParams> KPke<K, S, P> {
         KPke::<K, S, P> {
             _marker: std::marker::PhantomData::<(S, P)>,
         }
-    }
-}
-
-impl<const K: usize, S: SecurityLevel, P: PolyParams> Default for KPke<K, S, P> {
-    fn default() -> Self {
-        Self::new()
     }
 }
 

@@ -9,17 +9,12 @@ use crate::pke_scheme::{PkeDecryptKey, PkeEncryptKey};
 use crate::traits::KemScheme;
 use crate::{constants::PolyParams, pke_scheme::KPke, traits::PkeScheme};
 
+#[derive(Default)]
 pub struct MlKem<const K: usize, S: SecurityLevel, P: PolyParams>(pub KPke<K, S, P>);
 
 impl<const K: usize, S: SecurityLevel, P: PolyParams> MlKem<K, S, P> {
     pub fn new() -> Self {
         MlKem(KPke::<K, S, P>::new())
-    }
-}
-
-impl<const K: usize, S: SecurityLevel, P: PolyParams> Default for MlKem<K, S, P> {
-    fn default() -> Self {
-        Self::new()
     }
 }
 
@@ -61,9 +56,7 @@ impl<const K: usize, S: SecurityLevel, P: PolyParams> KemScheme for MlKem<K, S, 
         z: &[u8; 32],
     ) -> Result<(Self::EncapsKey, Self::DecapsKey), Error> {
         let (pke_encrypt_key, pke_decrypt_key) = self.0.key_gen(d)?;
-        let mut decaps_2_content = [0u8; 96];
-        decaps_2_content[..32].copy_from_slice(&pke_encrypt_key.1);
-
+        
         let h_res: [u8; 32] = {
             let mut h_hash = H::default();
             for slice in &pke_encrypt_key.0 {
@@ -73,6 +66,8 @@ impl<const K: usize, S: SecurityLevel, P: PolyParams> KemScheme for MlKem<K, S, 
             h_hash.squeeze()
         };
 
+        let mut decaps_2_content = [0u8; 96];
+        decaps_2_content[..32].copy_from_slice(&pke_encrypt_key.1);
         decaps_2_content[32..64].copy_from_slice(&h_res);
         decaps_2_content[64..].copy_from_slice(z);
 
