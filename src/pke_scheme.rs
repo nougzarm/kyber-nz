@@ -121,7 +121,7 @@ impl<const K: usize, S: SecurityLevel, P: PolyParams> PkeScheme for KPke<K, S, P
                 byte_decode(chunk, 12, P::Q, &mut res)?;
                 res
             };
-            t_ntt.push(PolynomialNTT::<P>::from_slice(coeffs.as_slice())?);
+            t_ntt.push(PolynomialNTT::<P>::from(coeffs));
         }
         let rho = &ek.1;
 
@@ -178,7 +178,7 @@ impl<const K: usize, S: SecurityLevel, P: PolyParams> PkeScheme for KPke<K, S, P
             for (i, &b) in m_bits.iter().enumerate() {
                 coeffs[i] = decompress(b, 1, P::Q);
             }
-            Polynomial::<P>::from_slice(&coeffs)?
+            Polynomial::<P>::from(coeffs)
         };
 
         let v = {
@@ -262,7 +262,7 @@ impl<const K: usize, S: SecurityLevel, P: PolyParams> PkeScheme for KPke<K, S, P
                 byte_decode(chunk, 12, P::Q, &mut result)?;
                 result
             };
-            s_ntt.push(PolynomialNTT::<P>::from_slice(coeffs.as_slice())?);
+            s_ntt.push(PolynomialNTT::<P>::from(coeffs));
         }
 
         let w = {
