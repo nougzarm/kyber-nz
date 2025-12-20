@@ -46,7 +46,6 @@ impl H {
     pub fn evaluate(s: &[u8]) -> [u8; 32] {
         let mut hasher = Self::new();
         hasher.absorb(s);
-
         hasher.squeeze()
     }
 }
@@ -73,14 +72,12 @@ impl J {
         let mut reader = self.hasher.finalize_xof();
         let mut output = [0u8; 32];
         reader.read(&mut output);
-
         output
     }
 
     pub fn evaluate(s: &[u8]) -> [u8; 32] {
         let mut hasher = Self::new();
         hasher.absorb(s);
-
         hasher.squeeze()
     }
 }
@@ -109,14 +106,12 @@ impl G {
         let mut b = [0u8; 32];
         a.copy_from_slice(&result[0..32]);
         b.copy_from_slice(&result[32..64]);
-
         (a, b)
     }
 
     pub fn evaluate(c: &[u8]) -> ([u8; 32], [u8; 32]) {
         let mut hasher = Self::new();
         hasher.absorb(c);
-
         hasher.squeeze()
     }
 }
