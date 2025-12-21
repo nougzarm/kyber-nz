@@ -38,9 +38,7 @@ pub fn bits_to_bytes(bits: &[u8], out: &mut [u8]) -> Result<(), Error> {
     }
 
     for (i, &bit) in bits.iter().enumerate() {
-        if bit == 1 {
-            out[i / 8] |= 1u8 << (i % 8);
-        }
+        out[i / 8] |= (bit & 1) << (i % 8);
     }
     Ok(())
 }
