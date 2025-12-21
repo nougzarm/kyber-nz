@@ -191,11 +191,7 @@ impl<const K: usize, S: SecurityLevel, P: PolyParams> PkeScheme for KPke<K, S, P
 
         let mut c1 = Vec::new();
         for poly in &u {
-            let compressed: Vec<i16> = poly
-                .coeffs
-                .iter()
-                .map(|&c| compress(c, S::DU, P::Q))
-                .collect();
+            let compressed: [i16; 256] = array::from_fn(|i| compress(poly.coeffs[i], S::DU, P::Q));
             let compressed_encode = {
                 let mut result = vec![0u8; 32 * S::DU];
                 byte_encode(&compressed, S::DU, &mut result)?;
@@ -204,7 +200,7 @@ impl<const K: usize, S: SecurityLevel, P: PolyParams> PkeScheme for KPke<K, S, P
             c1.extend(compressed_encode);
         }
 
-        let compressed_v: Vec<i16> = v.coeffs.iter().map(|&c| compress(c, S::DV, P::Q)).collect();
+        let compressed_v: [i16; 256] = array::from_fn(|i| compress(v.coeffs[i], S::DV, P::Q));
         let c2 = {
             let mut result = vec![0u8; 32 * S::DV];
             byte_encode(&compressed_v, S::DV, &mut result)?;
@@ -236,11 +232,8 @@ impl<const K: usize, S: SecurityLevel, P: PolyParams> PkeScheme for KPke<K, S, P
                 )?;
                 result
             };
-            let coeffs: Vec<i16> = decode
-                .into_iter()
-                .map(|val| decompress(val, S::DU, P::Q))
-                .collect();
-            u_prime.push(Polynomial::<P>::from_slice(coeffs.as_slice())?);
+            let coeffs: [i16; 256] = array::from_fn(|i| decompress(decode[i], S::DU, P::Q));
+            u_prime.push(Polynomial::<P>::from(coeffs));
         }
 
         let decoded_v = {
@@ -248,10 +241,7 @@ impl<const K: usize, S: SecurityLevel, P: PolyParams> PkeScheme for KPke<K, S, P
             byte_decode(c_2, S::DV, P::Q, &mut result)?;
             result
         };
-        let v_coeffs: Vec<i16> = decoded_v
-            .into_iter()
-            .map(|val| decompress(val, S::DV, P::Q))
-            .collect();
+        let v_coeffs: [i16; 256] = array::from_fn(|i| decompress(decoded_v[i], S::DV, P::Q));
         let v_prime = Polynomial::<P>::from_slice(v_coeffs.as_slice())?;
 
         let mut s_ntt = Vec::with_capacity(K);
@@ -273,11 +263,7 @@ impl<const K: usize, S: SecurityLevel, P: PolyParams> PkeScheme for KPke<K, S, P
             &v_prime - &Polynomial::<P>::from_ntt(&tmp)
         };
 
-        let compressed_w: Vec<i16> = w
-            .coeffs
-            .iter()
-            .map(|&coeff| compress(coeff, 1, P::Q))
-            .collect();
+        let compressed_w: [i16; 256] = array::from_fn(|i| compress(w.coeffs[i], 1, P::Q));
 
         let mut result = [0u8; 32];
         byte_encode(compressed_w.as_slice(), 1, &mut result)?;
