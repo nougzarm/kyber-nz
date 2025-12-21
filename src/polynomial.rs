@@ -291,14 +291,11 @@ impl<P: PolyParams> Mul for &PolynomialNTT<P> {
     fn mul(self, rhs: Self) -> Self::Output {
         let mut new_coeffs = [0i16; 256];
 
-        let zetas = P::zetas();
+        let gammas = P::gammas();
         for i in 0..128 {
-            let gamma = ((zetas[i] as i32 * zetas[i] as i32).rem_euclid(P::Q as i32)
-                * P::ZETA as i32)
-                .rem_euclid(P::Q as i32) as i16;
             new_coeffs[2 * i] = (self[2 * i] as i32 * rhs[2 * i] as i32
                 + (self[2 * i + 1] as i32 * rhs[2 * i + 1] as i32).rem_euclid(P::Q as i32)
-                    * gamma as i32)
+                    * gammas[i] as i32)
                 .rem_euclid(P::Q as i32) as i16;
             new_coeffs[2 * i + 1] = (self[2 * i] as i32 * rhs[2 * i + 1] as i32
                 + self[2 * i + 1] as i32 * rhs[2 * i] as i32)
