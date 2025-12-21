@@ -19,9 +19,9 @@ exclude = [
 
 [dev-dependencies]
 criterion = "0.8.1"
+hex = "0.4.3"
 
 [dependencies]
-hex = "0.4.3"
 rand = "0.8"
 sha3 = "0.10.8"
 subtle = "2.6.1"
