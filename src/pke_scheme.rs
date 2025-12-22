@@ -242,7 +242,7 @@ impl<const K: usize, S: SecurityLevel, P: PolyParams> PkeScheme for KPke<K, S, P
             result
         };
         let v_coeffs: [i16; 256] = array::from_fn(|i| decompress(decoded_v[i], S::DV, P::Q));
-        let v_prime = Polynomial::<P>::from_slice(v_coeffs.as_slice())?;
+        let v_prime = Polynomial::<P>::from(v_coeffs);
 
         let mut s_ntt = Vec::with_capacity(K);
         for i in 0..K {
