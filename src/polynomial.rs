@@ -37,15 +37,6 @@ impl<P: PolyParams> Polynomial<P> {
         Polynomial::<P>::from(*coeffs)
     }
 
-    pub fn from_slice(coeffs: &[i16]) -> Result<Self, Error> {
-        if coeffs.len() != 256 {
-            return Err(Error::InvalidInputLength);
-        }
-        let mut new_coeffs = [0i16; 256];
-        new_coeffs.copy_from_slice(coeffs);
-        Ok(Polynomial::<P>::from(new_coeffs))
-    }
-
     /// Algorithm 8 (FIPS 203) : SimplePolyCBD_eta(B)
     ///
     /// Input : B in B^(64*eta)
@@ -324,21 +315,21 @@ impl<P: PolyParams> IndexMut<usize> for PolynomialNTT<P> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{constants::KyberParams, KyberPoly};
+    use crate::KyberPoly;
 
     #[test]
     fn basics() -> Result<(), Error> {
-        let mut a_coeffs: Vec<i16> = vec![1, 0, 2, 3, 18, 32, 72, 21, 23, 1, 0, 9, 287, 23];
-        a_coeffs.extend_from_slice(&[0i16; KyberParams::N - 14]);
-        let a = KyberPoly::from_slice(&a_coeffs)?;
+        let mut a_coeffs = [0i16; 256];
+        a_coeffs[..14].copy_from_slice(&[1, 0, 2, 3, 18, 32, 72, 21, 23, 1, 0, 9, 287, 23]);
+        let a = KyberPoly::from(a_coeffs);
         assert_eq!(KyberPoly::from_ntt(&a.to_ntt()).coeffs, a.coeffs);
 
-        let mut p1_coeffs: Vec<i16> = vec![1, 2, 4, 4, 3, 1, 6, 6, 4, 3];
-        p1_coeffs.extend_from_slice(&[0i16; KyberParams::N - 10]);
-        let mut p2_coeffs: Vec<i16> = vec![3, 4, 8, 10, 27, 273, 12, 982, 12, 42, 9];
-        p2_coeffs.extend_from_slice(&[0i16; KyberParams::N - 11]);
-        let p1 = KyberPoly::from_slice(&p1_coeffs)?;
-        let p2 = KyberPoly::from_slice(&p2_coeffs)?;
+        let mut p1_coeffs = [0i16; 256];
+        p1_coeffs[..10].copy_from_slice(&[1, 2, 4, 4, 3, 1, 6, 6, 4, 3]);
+        let mut p2_coeffs = [0i16; 256];
+        p2_coeffs[..11].copy_from_slice(&[3, 4, 8, 10, 27, 273, 12, 982, 12, 42, 9]);
+        let p1 = KyberPoly::from(p1_coeffs);
+        let p2 = KyberPoly::from(p2_coeffs);
         assert_eq!(
             KyberPoly::from_ntt(&(&p1.to_ntt() * &p2.to_ntt())).coeffs,
             (&p1 * &p2).coeffs
