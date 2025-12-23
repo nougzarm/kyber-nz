@@ -25,6 +25,7 @@ hex = "0.4.3"
 rand = "0.8"
 sha3 = "0.10.8"
 subtle = "2.6.1"
+thiserror = "2.0.17"
 zeroize = { version = "1.8.2", features = ["derive"] }
 
 [[bench]]

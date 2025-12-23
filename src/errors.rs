@@ -1,18 +1,10 @@
-use core::fmt;
+use thiserror::Error;
 
-#[derive(Debug, PartialEq)]
+#[derive(Error, Debug, PartialEq)]
 pub enum Error {
+    #[error("Input length is invalid")]
     InvalidInputLength,
+
+    #[error("Invalid value for Eta")]
     InvalidEta,
 }
-
-impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Error::InvalidInputLength => write!(f, "Input length is invalid"),
-            Error::InvalidEta => write!(f, "Invalid value for Eta"),
-        }
-    }
-}
-
-impl core::error::Error for Error {}
