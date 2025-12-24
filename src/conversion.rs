@@ -2,7 +2,6 @@ use crate::errors::Error;
 
 pub fn compress(x: i16, d: usize, q: i16) -> i16 {
     let two_pow_d = 1i32 << d;
-
     let numerator = x as i32 * two_pow_d;
     let rounded = (numerator + (q as i32 / 2)) / q as i32;
 
@@ -11,8 +10,8 @@ pub fn compress(x: i16, d: usize, q: i16) -> i16 {
 
 pub fn decompress(x: i16, d: usize, q: i16) -> i16 {
     let numerator = x as i32 * q as i32;
-
     let half_divisor = 1i32 << (d - 1);
+
     ((numerator + half_divisor) >> d) as i16
 }
 
@@ -31,7 +30,6 @@ pub fn bits_to_bytes(bits: &[u8], out: &mut [u8]) -> Result<(), Error> {
     if !bits.len().is_multiple_of(8) {
         return Err(Error::InvalidInputLength);
     }
-
     let output_length = bits.len() / 8;
     if out.len() != output_length {
         return Err(Error::InvalidInputLength);
@@ -40,6 +38,7 @@ pub fn bits_to_bytes(bits: &[u8], out: &mut [u8]) -> Result<(), Error> {
     for (i, &bit) in bits.iter().enumerate() {
         out[i / 8] |= (bit & 1) << (i % 8);
     }
+
     Ok(())
 }
 
